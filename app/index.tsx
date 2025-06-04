@@ -1,18 +1,19 @@
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 
 export default function Index() {
   const router = useRouter();
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        router.replace("/components/login");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/components/login");
+      } else {
+        setSession(session);
       }
     };
     checkAuth();
@@ -26,7 +27,9 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text>Loading...</Text>
+      <Text>
+        Welcome to {session?.user?.email ? session.user.email : "Localite"}!
+      </Text>
     </View>
   );
 }
