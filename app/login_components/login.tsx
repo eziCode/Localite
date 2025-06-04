@@ -86,7 +86,7 @@ export default function Auth() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/components/signup")}>
+          <TouchableOpacity onPress={() => router.push("/login_components/signup")}>
             <Text style={styles.linkText}>Don't have an account? Sign up</Text>
           </TouchableOpacity>
         </View>

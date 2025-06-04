@@ -1,14 +1,14 @@
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
@@ -129,7 +129,7 @@ export default function Signup() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/components/login")}>
+          <TouchableOpacity onPress={() => router.push("/login_components/login")}>
             <Text style={styles.linkText}>Already have an account? Log in</Text>
           </TouchableOpacity>
         </View>
