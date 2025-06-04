@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-export default function Profile() {
+export default function Settings() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />

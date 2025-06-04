@@ -1,13 +1,13 @@
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text } from "react-native";
 import { supabase } from "../lib/supabase";
-import Login from "./login_components/login";
-import Main from "./tabs/main";
 
 
 export default function Index() {
+  const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [destination, setDestination] = useState<null | "main" | "login">(null);
+  const [destination, setDestination] = useState<null | "/tabs/main" | "/login_components/login">(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -16,7 +16,7 @@ export default function Index() {
 
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setDestination(session ? "main" : "login");
+      setDestination(session ? "/tabs/main" : "/login_components/login");
       authDone = true;
       if (timerDone) setReady(true);
     };
@@ -37,22 +37,16 @@ export default function Index() {
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        router.replace(destination);
+      });
     }
   }, [ready, destination]);
 
-  // Render the correct page under the loading overlay
-  let Page = null;
-  if (destination === "main") Page = <Main />;
-  if (destination === "login") Page = <Login />;
-
   return (
-    <>
-      {Page}
-      <Animated.View pointerEvents="none" style={[styles.container, { opacity: fadeAnim }]}>
-        <Text style={styles.text}>Loading...</Text>
-      </Animated.View>
-    </>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <Text style={styles.text}>Loading...</Text>
+    </Animated.View>
   );
 }
 
