@@ -16,6 +16,7 @@ export default function Signup() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [age, setAge] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,8 +24,12 @@ export default function Signup() {
 
   const handleSignup = async () => {
     setError("");
-    if (!email || !username || !password || !confirmPassword) {
+    if (!email || !username || !age || !password || !confirmPassword) {
       setError("Please fill in all fields.");
+      return;
+    }
+    if (isNaN(Number(age)) || Number(age) < 0) {
+      setError("Please enter a valid age.");
       return;
     }
     if (password !== confirmPassword) {
@@ -36,7 +41,7 @@ export default function Signup() {
       email,
       password,
       options: {
-        data: { username },
+        data: { username, age: Number(age) },
       },
     });
     setLoading(false);
@@ -58,58 +63,70 @@ export default function Signup() {
           <Text style={styles.title}>Create an Account</Text>
 
           <TextInput
-        placeholder="Email"
-        placeholderTextColor="#999"
-        value={email}
-        onChangeText={(text) => {
-            setEmail(text);
-            if (error) setError("");
-        }}
-        style={styles.input}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        />
+            placeholder="Email"
+            placeholderTextColor="#999"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (error) setError("");
+            }}
+            style={styles.input}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+          />
 
-        <TextInput
-        placeholder="Username"
-        placeholderTextColor="#999"
-        value={username}
-        onChangeText={(text) => {
-            setUsername(text);
-            if (error) setError("");
-        }}
-        style={styles.input}
-        autoCapitalize="none"
-        textContentType="username"
-        />
+          <TextInput
+            placeholder="Username"
+            placeholderTextColor="#999"
+            value={username}
+            onChangeText={(text) => {
+              setUsername(text);
+              if (error) setError("");
+            }}
+            style={styles.input}
+            autoCapitalize="none"
+            textContentType="username"
+          />
 
-        <TextInput
-        placeholder="Password"
-        placeholderTextColor="#999"
-        value={password}
-        onChangeText={(text) => {
-            setPassword(text);
-            if (error) setError("");
-        }}
-        style={styles.input}
-        secureTextEntry
-        textContentType="oneTimeCode"
-        />
+          <TextInput
+            placeholder="Age"
+            placeholderTextColor="#999"
+            value={age}
+            onChangeText={(text) => {
+              setAge(text.replace(/[^0-9]/g, ""));
+              if (error) setError("");
+            }}
+            style={styles.input}
+            keyboardType="numeric"
+            maxLength={3}
+          />
 
-        <TextInput
-        placeholder="Confirm Password"
-        placeholderTextColor="#999"
-        value={confirmPassword}
-        onChangeText={(text) => {
-            setConfirmPassword(text);
-            if (error) setError("");
-        }}
-        style={styles.input}
-        secureTextEntry
-        textContentType="oneTimeCode"
-        />
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor="#999"
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (error) setError("");
+            }}
+            style={styles.input}
+            secureTextEntry
+            textContentType="oneTimeCode"
+          />
 
+          <TextInput
+            placeholder="Confirm Password"
+            placeholderTextColor="#999"
+            value={confirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              if (error) setError("");
+            }}
+            style={styles.input}
+            secureTextEntry
+            textContentType="oneTimeCode"
+          />
 
           {error ? (
             <View style={styles.errorContainer}>
@@ -165,7 +182,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#222",
   },
-    input: {
+  input: {
     backgroundColor: "#f3f3f3",
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -174,7 +191,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     width: "100%",
     marginBottom: 12,
-},
+  },
   button: {
     backgroundColor: "#ff5f05",
     paddingVertical: 14,

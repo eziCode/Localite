@@ -7,7 +7,7 @@ import { supabase } from "../lib/supabase";
 export default function Index() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [destination, setDestination] = useState<null | "/tabs/main" | "/login_components/login">(null);
+  const [destination, setDestination] = useState<null | "/tabs/groups" | "/login_components/login">(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -16,7 +16,7 @@ export default function Index() {
 
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setDestination(session ? "/tabs/main" : "/login_components/login");
+      setDestination(session ? "/tabs/groups" : "/login_components/login");
       authDone = true;
       if (timerDone) setReady(true);
     };

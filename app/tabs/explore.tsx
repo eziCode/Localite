@@ -6,7 +6,7 @@ export default function Settings() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        <Text style={styles.text}>Welcome to Settings</Text>
+        <Text style={styles.text}>Welcome to Explore</Text>
       </View>
     </>
   );

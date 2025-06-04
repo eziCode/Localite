@@ -14,7 +14,7 @@ export default function Main() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        <Text style={styles.text}>Welcome to Main</Text>
+        <Text style={styles.text}>Welcome to Groups</Text>
         <TouchableOpacity style={styles.button} onPress={handleSignOut}>
           <Text style={styles.buttonText}>Sign Out</Text>
         </TouchableOpacity>
