@@ -2,14 +2,16 @@ import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import CreateGroupModal from "../modals/create_group";
 
 type Group = {
   id: string;
@@ -27,6 +29,8 @@ export default function GroupsPage() {
   const [suggestedGroups, setSuggestedGroups] = useState<Group[]>([]);
   const [inviteCode, setInviteCode] = useState("");
   const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -62,7 +66,7 @@ export default function GroupsPage() {
   };
 
   const handleCreateGroup = () => {
-    router.push("/modals/create_group");
+    setShowCreateModal(true);
   };
 
   return (
@@ -134,6 +138,14 @@ export default function GroupsPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <Modal 
+        animationType="slide"
+        visible={showCreateModal}
+        onRequestClose={() => setShowCreateModal(false)}
+        presentationStyle="pageSheet"
+      >
+        <CreateGroupModal onClose={() => setShowCreateModal(false)} />
+      </Modal>
     </>
   );
 }

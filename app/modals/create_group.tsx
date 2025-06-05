@@ -1,7 +1,12 @@
 import { useRouter } from "expo-router";
+import React from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-export default function CreateGroupModal() {
+type CreateGroupModalProps = {
+  onClose: () => void;
+};
+
+export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
   const router = useRouter();
 
   return (
@@ -13,7 +18,7 @@ export default function CreateGroupModal() {
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Create</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={onClose}>
           <Text style={styles.cancel}>Cancel</Text>
         </TouchableOpacity>
     </View>
