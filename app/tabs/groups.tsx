@@ -85,6 +85,13 @@ export default function GroupsPage() {
     setShowCreateModal(true);
   };
 
+  const handleRefreshGroups = () => {
+    if (user) {
+      fetchUserGroups(user.id);
+      fetchSuggestedGroups(user.id);
+    }
+  };
+
   return (
     <>
       <Stack.Screen
@@ -160,7 +167,10 @@ export default function GroupsPage() {
         onRequestClose={() => setShowCreateModal(false)}
         presentationStyle="pageSheet"
       >
-        <CreateGroupModal onClose={() => setShowCreateModal(false)} />
+        <CreateGroupModal
+          onClose={() => setShowCreateModal(false)}
+          onGroupCreated={handleRefreshGroups}
+        />
       </Modal>
     </>
   );

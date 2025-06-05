@@ -5,11 +5,12 @@ import { supabase } from "../../lib/supabase";
 
 type CreateGroupModalProps = {
   onClose: () => void;
+  onGroupCreated: () => void;
 };
 
 const vibeOptions = ["Music", "Hiking", "Photography", "Gaming", "Study", "Chill", "Dance", "Spiritual"];
 
-export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
+export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGroupModalProps) {
   const router = useRouter();
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
@@ -60,6 +61,7 @@ export default function CreateGroupModal({ onClose }: CreateGroupModalProps) {
         return setError("Failed to create group. Try again.");
       }
 
+      onGroupCreated();
       onClose();
     };
 
