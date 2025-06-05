@@ -21,6 +21,8 @@ type Group = {
   invite_code?: string;
   creator_id: string;
   members: string[];
+  vibes?: string[];
+  is_private?: boolean;
 };
 
 export default function GroupsPage() {
@@ -42,6 +44,7 @@ export default function GroupsPage() {
           .from("groups")
           .select("*")
           .filter("members", "cs", JSON.stringify([user.id]))
+          .order("id", { ascending: false })
           .limit(10);
 
         if (userGroupsError) console.error(userGroupsError);
