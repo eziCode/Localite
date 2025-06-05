@@ -10,8 +10,10 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
 import CreateGroupModal from "../modals/create_group";
+
 
 type Group = {
   id: string;
@@ -99,16 +101,17 @@ export default function GroupsPage() {
           headerShown: false,
         }}
       />
-      <ScrollView style={styles.container}>
-        <Text style={styles.title}>Your Groups</Text>
-        {userGroups.length === 0 ? (
-          <Text style={styles.subText}>No groups yet.</Text>
-        ) : (
-          <FlatList
-            data={userGroups}
-            keyExtractor={(item) => item.id.toString()}
-            scrollEnabled={false}
-            renderItem={({ item }) => (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fafafa" }} >
+        <ScrollView style={styles.container}>
+          <Text style={styles.title}>Your Groups</Text>
+          {userGroups.length === 0 ? (
+            <Text style={styles.subText}>No groups yet.</Text>
+          ) : (
+            <FlatList
+              data={userGroups}
+              keyExtractor={(item) => item.id.toString()}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
               <TouchableOpacity style={styles.card}>
                 <Text style={styles.groupName}>{item.name}</Text>
                 <Text style={styles.groupMeta}>
@@ -161,6 +164,7 @@ export default function GroupsPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </SafeAreaView>
       <Modal
         animationType="slide"
         visible={showCreateModal}
