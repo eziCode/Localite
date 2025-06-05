@@ -90,7 +90,7 @@ export default function GroupsPage() {
   };
 
   const handleForeignGroups = () => {
-    router.push("/tabs/groups_components/foreign_groups_view");
+    router.push("/(group_components)/foreign_groups_view");
   };
 
   const handleRefreshGroups = () => {
