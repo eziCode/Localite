@@ -1,0 +1,30 @@
+import { Stack } from "expo-router";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+
+export default function ForeignGroupsView() {
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
+      <View style={styles.container}>
+        <Text>
+          Foreign Groups
+        </Text>
+      </View>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 70,
+    paddingHorizontal: 24,
+    backgroundColor: "#fff8f2",
+  },
+});
