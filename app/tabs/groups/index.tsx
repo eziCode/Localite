@@ -11,8 +11,8 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../../lib/supabase";
-import CreateGroupModal from "../modals/create_group";
+import { supabase } from "../../../lib/supabase";
+import CreateGroupModal from "../../modals/create_group";
 
 
 type Group = {
@@ -90,7 +90,7 @@ export default function GroupsPage() {
   };
 
   const handleForeignGroups = () => {
-    router.push("/(group_components)/foreign_groups_view");
+    router.push("/tabs/groups/foreign_groups_view");
   };
 
   const handleRefreshGroups = () => {

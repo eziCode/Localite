@@ -29,6 +29,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="groups"
         options={{
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people-outline" color={color} size={size} />
           ),
