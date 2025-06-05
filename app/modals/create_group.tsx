@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../lib/supabase";
@@ -11,7 +10,6 @@ type CreateGroupModalProps = {
 const vibeOptions = ["Music", "Hiking", "Photography", "Gaming", "Study", "Chill", "Dance", "Spiritual"];
 
 export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGroupModalProps) {
-  const router = useRouter();
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
@@ -54,6 +52,8 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
           members: [user.id],
           vibes: selectedVibes,
           is_private: isPrivate,
+          founder: user.id,
+          leaders: [],
         });
 
       if (error) {

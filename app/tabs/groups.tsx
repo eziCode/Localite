@@ -25,6 +25,8 @@ type Group = {
   members: string[];
   vibes?: string[];
   is_private?: boolean;
+  founder: string;
+  leaders?: string[];
 };
 
 export default function GroupsPage() {
