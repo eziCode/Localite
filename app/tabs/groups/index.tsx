@@ -12,22 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
+import type { Group } from "../../../types/group";
 import CreateGroupModal from "../../modals/create_group";
-
-
-type Group = {
-  id: string;
-  created_at: string;
-  name: string;
-  description?: string;
-  invite_code?: string;
-  creator_id: string;
-  members: string[];
-  vibes?: string[];
-  is_private?: boolean;
-  founder: string;
-  leaders?: string[];
-};
 
 export default function GroupsPage() {
   const router = useRouter();
@@ -59,6 +45,7 @@ export default function GroupsPage() {
       .from("groups")
       .select("*")
       .not("members", "cs", JSON.stringify([userId]))
+      .neq("visibility", "hidden")
       .limit(5);
 
     if (suggestedGroupsError) {
@@ -87,10 +74,6 @@ export default function GroupsPage() {
 
   const handleCreateGroup = () => {
     setShowCreateModal(true);
-  };
-
-  const handleForeignGroups = () => {
-    router.push("/tabs/groups/foreign_groups_view");
   };
 
   const handleRefreshGroups = () => {
@@ -141,7 +124,15 @@ export default function GroupsPage() {
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={handleForeignGroups} style={styles.suggestedGroup}>
+              <TouchableOpacity
+                onPress={() => router.push({
+                  pathname: "/tabs/groups/foreign_groups_view",
+                  params: { 
+                    group: JSON.stringify(item),
+                  },
+                })}
+                style={styles.suggestedGroup}
+              >
                 <Text style={styles.groupName}>{item.name}</Text>
                 <Text style={styles.groupMeta}>
                   {item.members?.length ?? 0}{" "}

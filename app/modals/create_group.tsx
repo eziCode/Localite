@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../lib/supabase";
 
 type CreateGroupModalProps = {
@@ -13,7 +13,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [visibility, setVisibility] = useState<"open" | "request" | "hidden">("open");
   const [error, setError] = useState<string | null>(null);
 
   const toggleVibe = (vibe: string) => {
@@ -51,7 +51,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
           creator_id: user.id,
           members: [user.id],
           vibes: selectedVibes,
-          is_private: isPrivate,
+          visibility: visibility,
           founder: user.id,
           leaders: [],
         });
@@ -117,15 +117,33 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         ))}
       </View>
 
-      <View style={styles.privacyRow}>
-        <Text style={styles.privacyLabel}>Private Group</Text>
-        <Switch
-          value={isPrivate}
-          onValueChange={setIsPrivate}
-          trackColor={{ false: "#d9cce3", true: "#bba5d2" }}
-          thumbColor={isPrivate ? "#fff" : "#f4f3f4"}
-        />
+      <Text style={styles.sectionLabel}>Visibility</Text>
+      <View style={styles.visibilityOptions}>
+        {["open", "request", "hidden"].map((option) => (
+          <TouchableOpacity
+            key={option}
+            onPress={() => setVisibility(option as "open" | "request" | "hidden")}
+            style={[
+              styles.visibilityChip,
+              visibility === option && styles.visibilityChipSelected,
+            ]}
+          >
+            <Text
+              style={[
+                styles.visibilityText,
+                visibility === option && styles.visibilityTextSelected,
+              ]}
+            >
+              {option === "open"
+                ? "🌐 Open"
+                : option === "request"
+                ? "📝 Request to Join"
+                : "🙈 Hidden"}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
+
 
       <TouchableOpacity style={styles.button} onPress={handleCreate}>
         <Text style={styles.buttonText}>Create</Text>
@@ -231,5 +249,30 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 12,
     fontSize: 15,
+  },
+  visibilityOptions: {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 8,
+  marginBottom: 20,
+  },
+  visibilityChip: {
+    backgroundColor: "#f2ecf8",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderColor: "#bba5d2",
+    borderWidth: 1,
+  },
+  visibilityChipSelected: {
+    backgroundColor: "#7c5e99",
+    borderColor: "#7c5e99",
+  },
+  visibilityText: {
+    color: "#7c5e99",
+    fontWeight: "500",
+  },
+  visibilityTextSelected: {
+    color: "#fff",
   },
 });
