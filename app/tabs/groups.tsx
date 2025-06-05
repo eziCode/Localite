@@ -34,33 +34,46 @@ export default function GroupsPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Helper functions
+  const fetchUserGroups = async (userId: string) => {
+    const { data: userGroupsData, error: userGroupsError } = await supabase
+      .from("groups")
+      .select("*")
+      .filter("members", "cs", JSON.stringify([userId]))
+      .order("id", { ascending: false })
+      .limit(10);
+
+    if (userGroupsError) {
+      console.error(userGroupsError);
+    } else {
+      setUserGroups(userGroupsData);
+    }
+  };
+
+  const fetchSuggestedGroups = async (userId: string) => {
+    const { data: suggestedGroupsData, error: suggestedGroupsError } = await supabase
+      .from("groups")
+      .select("*")
+      .not("members", "cs", JSON.stringify([userId]))
+      .limit(5);
+
+    if (suggestedGroupsError) {
+      console.error(suggestedGroupsError);
+    } else {
+      setSuggestedGroups(suggestedGroupsData);
+    }
+  };
+
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchAll = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-
       if (user) {
-        const { data: userGroupsData, error: userGroupsError } = await supabase
-          .from("groups")
-          .select("*")
-          .filter("members", "cs", JSON.stringify([user.id]))
-          .order("id", { ascending: false })
-          .limit(10);
-
-        if (userGroupsError) console.error(userGroupsError);
-        else setUserGroups(userGroupsData);
-
-        const { data: suggestedGroupsData, error: suggestedGroupsError } = await supabase
-          .from("groups")
-          .select("*")
-          .not("members", "cs", JSON.stringify([user.id]))
-          .limit(5);
-
-        if (suggestedGroupsError) console.error(suggestedGroupsError);
-        else setSuggestedGroups(suggestedGroupsData);
+        fetchUserGroups(user.id);
+        fetchSuggestedGroups(user.id);
       }
     };
-    fetchUser();
+    fetchAll();
   }, []);
 
   const handleJoinByCode = () => {
@@ -141,7 +154,7 @@ export default function GroupsPage() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      <Modal 
+      <Modal
         animationType="slide"
         visible={showCreateModal}
         onRequestClose={() => setShowCreateModal(false)}
