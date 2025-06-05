@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../lib/supabase";
 import CreateGroupModal from "../modals/create_group";
+import ForeignGroupModal from "../modals/foreign_groups_view";
 
 
 type Group = {
@@ -37,6 +38,7 @@ export default function GroupsPage() {
   const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showForeignGroupsModal, setShowForeignGroupsModal] = useState(false);
 
   // Helper functions
   const fetchUserGroups = async (userId: string) => {
@@ -89,6 +91,10 @@ export default function GroupsPage() {
     setShowCreateModal(true);
   };
 
+  const handleForeignGroups = () => {
+    setShowForeignGroupsModal(true);
+  };
+
   const handleRefreshGroups = () => {
     if (user) {
       fetchUserGroups(user.id);
@@ -137,7 +143,7 @@ export default function GroupsPage() {
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.suggestedGroup}>
+              <TouchableOpacity onPress={handleForeignGroups} style={styles.suggestedGroup}>
                 <Text style={styles.groupName}>{item.name}</Text>
                 <Text style={styles.groupMeta}>
                   {item.members?.length ?? 0}{" "}
@@ -176,6 +182,16 @@ export default function GroupsPage() {
         <CreateGroupModal
           onClose={() => setShowCreateModal(false)}
           onGroupCreated={handleRefreshGroups}
+        />
+      </Modal>
+      <Modal
+        animationType="slide"
+        visible={showForeignGroupsModal}
+        onRequestClose={() => setShowForeignGroupsModal(false)}
+        presentationStyle="pageSheet"
+      >
+        <ForeignGroupModal
+          onClose={() => setShowForeignGroupsModal(false)}
         />
       </Modal>
     </>
