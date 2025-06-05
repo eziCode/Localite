@@ -61,9 +61,17 @@ export default function GroupsPage() {
     console.log("Joining group with code:", inviteCode);
   };
 
+  const handleCreateGroup = () => {
+    router.push("/modals/create_group");
+  };
+
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
+      />
       <ScrollView style={styles.container}>
         <Text style={styles.title}>Your Groups</Text>
         {userGroups.length === 0 ? (
@@ -84,6 +92,10 @@ export default function GroupsPage() {
             )}
           />
         )}
+        <TouchableOpacity onPress={handleCreateGroup} style={styles.createButton}>
+          <Text style={styles.createButtonText}>+ Create New Group</Text>
+        </TouchableOpacity>
+
         <Text style={styles.title}>Suggested Groups</Text>
         {suggestedGroups.length === 0 ? (
           <Text style={styles.subText}>No suggested groups at this time.</Text>
@@ -128,45 +140,55 @@ export default function GroupsPage() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    paddingTop: 50,
     paddingHorizontal: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#fafafa",
   },
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#3a3a3a",
     marginTop: 24,
     marginBottom: 12,
   },
   subText: {
-    color: "#777",
+    color: "#9a9a9a",
     marginBottom: 12,
+    fontStyle: "italic",
   },
   card: {
-    backgroundColor: "#f3f3f3",
+    backgroundColor: "#fefefe",
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
     marginBottom: 12,
   },
   groupName: {
     fontSize: 18,
     fontWeight: "600",
+    color: "#242424",
   },
   groupMeta: {
     fontSize: 14,
-    color: "#666",
+    color: "#7a7a7a",
     marginTop: 4,
   },
   nextEvent: {
-    color: "#2e7d32",
+    color: "#567a68",
     marginTop: 6,
     fontSize: 14,
+    fontStyle: "italic",
   },
   suggestedGroup: {
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "#f0f0f0",
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: "#d7a4ff",
   },
   inviteRow: {
     flexDirection: "row",
@@ -177,15 +199,29 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderColor: "#ccc",
+    borderColor: "#bbb",
     borderWidth: 1,
     padding: 10,
-    borderRadius: 6,
+    borderRadius: 8,
+    backgroundColor: "#fff",
   },
   joinButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#7c5e99",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 6,
+    borderRadius: 8,
+  },
+  createButton: {
+    backgroundColor: "#7c5e99",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignSelf: "flex-start",
+    marginBottom: 16,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
 });
