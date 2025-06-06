@@ -1,5 +1,5 @@
-import { Stack, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -67,6 +67,20 @@ export default function GroupsPage() {
     fetchAll();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      // This will run every time the screen comes into focus
+      const fetchAll = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        if (user) {
+          fetchUserGroups(user.id);
+        }
+      };
+      fetchAll();
+    }, [])
+  );
+
   const handleJoinByCode = () => {
     // TODO: Check invite code against Supabase
     console.log("Joining group with code:", inviteCode);
@@ -129,6 +143,7 @@ export default function GroupsPage() {
                   pathname: "/tabs/groups/foreign_groups_view",
                   params: { 
                     group: JSON.stringify(item),
+                    user: user?.id,
                   },
                 })}
                 style={styles.suggestedGroup}

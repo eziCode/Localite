@@ -1,3 +1,4 @@
+import type { PublicUser } from "@/types/public_user";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -12,10 +13,13 @@ import type { Group } from "../../../types/group";
 
 export default function ForeignGroupsView() {
   const router = useRouter();
-  const { group } = useLocalSearchParams();
-  const parsedGroup: Group | null = group ? JSON.parse(group as string) : null;
+  const params = useLocalSearchParams();
+  const groupParam = params?.group;
 
-  if (!parsedGroup) {
+  const parsedGroup: Group | null = groupParam ? JSON.parse(groupParam as string) : null;
+  const parsedUser: string | null = typeof params?.user === "string" ? params.user : Array.isArray(params?.user) ? params.user[0] : null;
+
+  if (!parsedGroup || !parsedUser) {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
         <Text style={{ fontSize: 20, color: "#7c3aed", textAlign: "center" }}>
@@ -25,76 +29,81 @@ export default function ForeignGroupsView() {
     );
   }
 
+  const [founderUser, setFounderUser] = useState<PublicUser | null>(null);
+  const [leaderUsers, setLeaderUsers] = useState<PublicUser[]>([]);
+  const [memberUsers, setMemberUsers] = useState<PublicUser[]>([]);
+
+  if (!parsedGroup) return;
+
   const founder = parsedGroup.founder;
   const leaders = parsedGroup.leaders || [];
   const members = parsedGroup.members.filter(
-    id =>
-      id !== parsedGroup.founder &&
-      !(parsedGroup.leaders || []).includes(id)
+    id => id !== founder && !leaders.includes(id)
   );
 
-  const leaderLength = Math.min(parsedGroup?.leaders?.length || 0, 5);
-  const memberLength = Math.min(parsedGroup?.members?.length || 0, 5);
+  const leaderLength = leaders.length;
+  const memberLength = members.length;
 
-  const [founderUser, setFounderUser] = useState<{ username: string } | null>(null);
-  const [leaderUsers, setLeaderUsers] = useState<{ username: string }[]>([]);
-  const [memberUsers, setMemberUsers] = useState<{ username: string }[]>([]);
-
-  async function getUsersByIds(userIds: string[]): Promise<{ id: string; username?: string }[]> {
-  const session = await supabase.auth.getSession();
-  const token = session.data.session?.access_token;
-
-  const res = await fetch("https://<your-project-ref>.functions.supabase.co/get-users-by-id", {
-    method: "POST",
-    headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ user_ids: userIds }),
-      });
-
-      if (!res.ok) {
-        console.error("Error fetching users", await res.text());
-        return [];
-      }
-
-      const { users } = await res.json();
-      return users;
-    }
-
+  const leadersToFetch = leaderLength > 5 ? 5 : leaderLength;
+  const membersToFetch = memberLength > 5 ? 5 : memberLength;
 
   useEffect(() => {
-      const fetchAll = async () => {
-        const allIds = [
-          parsedGroup.founder,
-          ...(parsedGroup.leaders || []),
-          ...parsedGroup.members,
-        ];
-        const users = await getUsersByIds(allIds);
+    const fetchAll = async () => {
+      const { data: founderData } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_id", founder);
 
-        const founder = users.find((u) => u.id === parsedGroup.founder && typeof u.username === "string");
-        setFounderUser(founder ? { username: founder.username! } : null);
-        setLeaderUsers(
-          users
-            .filter((u) => parsedGroup.leaders?.includes(u.id) && typeof u.username === "string")
-            .map((u) => ({ username: u.username! }))
-        );
-        setMemberUsers(
-          users
-            .filter(
-              (u) =>
-                parsedGroup.members.includes(u.id) &&
-                u.id !== parsedGroup.founder &&
-                !parsedGroup.leaders?.includes(u.id) &&
-                typeof u.username === "string"
-            )
-            .map((u) => ({ username: u.username! }))
-        );
-      };
+      const { data: leaderData } = await supabase
+        .from("users")
+        .select("*")
+        .in("user_id", leaders.slice(0, leadersToFetch))
+        .limit(leadersToFetch);
 
-      fetchAll();
-    }, [parsedGroup]);
+      const { data: memberData } = await supabase
+        .from("users")
+        .select("*")
+        .in("user_id", members.slice(0, membersToFetch))
+        .limit(membersToFetch);
 
+      setFounderUser(founderData?.[0] || null);
+      setLeaderUsers(leaderData || []);
+      setMemberUsers(memberData || []);
+    };
+
+    fetchAll();
+  }, [parsedGroup]);
+
+  const handleJoinGroup = async () => {
+    if (parsedGroup.visibility === "open") {
+      // Join instantly
+      const { error } = await supabase
+        .from("groups")
+        .update({ members: [...parsedGroup.members, parsedUser] })
+        .eq("id", parsedGroup.id);
+
+      if (error) {
+        console.error("Error joining group:", error);
+      } else {
+        router.back();
+      }
+    } 
+    // else if (parsedGroup.visibility === "request") {
+    //   // Request to join
+    //   const { error } = await supabase
+    //     .from("group_requests")
+    //     .insert({
+    //       group_id: parsedGroup.id,
+    //       user_id: parsedUser,
+    //     });
+    //   if (error) {
+    //     console.error("Error requesting to join group:", error);
+    //   } else {
+    //     alert("Request sent! The group leader will review it soon.");
+    //     router.back();
+    //   }
+    // }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -106,7 +115,9 @@ export default function ForeignGroupsView() {
 
       <View style={styles.banner}>
         <Text style={styles.groupName}>{parsedGroup.name}</Text>
-        {parsedGroup.description && <Text style={styles.description}>{parsedGroup.description}</Text>}
+        {parsedGroup.description && (
+          <Text style={styles.description}>{parsedGroup.description}</Text>
+        )}
 
         {parsedGroup.vibes?.length ? (
           <View style={styles.vibes}>
@@ -131,45 +142,63 @@ export default function ForeignGroupsView() {
 
       <Text style={styles.sectionTitle}>👑 Founder</Text>
       {founderUser && (
-        <View style={[styles.member, styles.founderBorder]}>
-          <Text style={styles.memberText}>{founderUser.username[0]?.toUpperCase()}</Text>
-          <Text style={styles.memberBadge}>Founder</Text>
+        <View style={styles.memberContainer}>
+          <View style={[styles.member, styles.founderBorder]}>
+            <Text style={styles.memberText}>{founderUser.user_name[0]?.toUpperCase()}</Text>
+          </View>
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>🧭 Leaders ({leaders.length})</Text>
+      <Text style={styles.sectionTitleRow}>
+        <Text>🧭 Leaders ({leaderLength})</Text>
+        {leaderLength > 5 && (
+          <TouchableOpacity
+            style={styles.arrowButton}
+            onPress={() => {
+              // TODO: Navigate to full leaders list page
+              // router.push("/tabs/groups/all_leaders?group=" + encodeURIComponent(JSON.stringify(parsedGroup)));
+            }}
+          >
+            <Text style={styles.arrowButtonText}>→</Text>
+          </TouchableOpacity>
+        )}
+      </Text>
       <View style={styles.members}>
         {leaderUsers.map((user, i) => (
-          <View key={i} style={[styles.member, styles.leaderBorder]}>
-            <Text style={styles.memberText}>{user.username[0]?.toUpperCase()}</Text>
-            <Text style={styles.memberBadge}>Leader</Text>
+          <View key={i} style={styles.memberContainer}>
+            <View style={[styles.member, styles.leaderBorder]}>
+              <Text style={styles.memberText}>{user.user_name[0]?.toUpperCase()}</Text>
+            </View>
           </View>
         ))}
-        {leaders.length === 5 && (
-          <TouchableOpacity onPress={() => {/* add your logic here */}}>
-            <Text style={styles.moreMembers}>→ View All Leaders</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
-      <Text style={styles.sectionTitle}>👥 Members ({members.length})</Text>
+      <Text style={styles.sectionTitleRow}>
+        <Text>👥 Members ({memberLength})</Text>
+        {memberLength > 5 && (
+          <TouchableOpacity
+            style={styles.arrowButton}
+            onPress={() => {
+              // TODO: Navigate to full members list page
+              // router.push("/tabs/groups/all_members?group=" + encodeURIComponent(JSON.stringify(parsedGroup)));
+            }}
+          >
+            <Text style={styles.arrowButtonText}>→</Text>
+          </TouchableOpacity>
+        )}
+      </Text>
       <View style={styles.members}>
         {memberUsers.map((user, i) => (
-          <View key={i} style={styles.member}>
-            <Text style={styles.memberText}>{user.username[0]?.toUpperCase()}</Text>
-            <Text style={styles.memberBadge}>Member</Text>
+          <View key={i} style={styles.memberContainer}>
+            <View style={styles.member}>
+              <Text style={styles.memberText}>{user.user_name[0]?.toUpperCase()}</Text>
+            </View>
           </View>
         ))}
-        {members.length === 5 && (
-          <TouchableOpacity onPress={() => {/* add your logic here */}}>
-            <Text style={styles.moreMembers}>→ View All Members</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
-
       {parsedGroup.visibility !== "hidden" && (
-        <TouchableOpacity style={styles.joinButton}>
+        <TouchableOpacity onPress={handleJoinGroup} style={styles.joinButton}>
           <Text style={styles.joinButtonText}>
             {parsedGroup.visibility === "open" ? "🚀 Join Instantly" : "✍️ Request to Join"}
           </Text>
@@ -228,55 +257,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginBottom: 8,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-  members: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 24,
-  },
-  member: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#7c3aed",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  memberText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  memberBadge: {
-    position: "absolute",
-    bottom: -16,
-    fontSize: 10,
-    fontWeight: "600",
-    color: "#6b7280",
-  },
-  joinButton: {
-    marginTop: 32,
-    backgroundColor: "#8b5cf6",
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  joinButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  invite: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#6b21a8",
-    fontStyle: "italic",
-  },
   metaBadge: {
     marginTop: 12,
     backgroundColor: "#ede9fe",
@@ -287,6 +267,55 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     fontWeight: "600",
+  },
+  invite: {
+    marginTop: 10,
+    fontSize: 14,
+    color: "#6b21a8",
+    fontStyle: "italic",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  members: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    marginBottom: 24,
+  },
+  memberContainer: {
+    alignItems: "center",
+    marginRight: 16,
+  },
+  member: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#7c3aed",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  memberText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 20,
+  },
+  memberLabel: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6b7280",
+    textAlign: "center",
   },
   moreMembers: {
     marginTop: 8,
@@ -301,5 +330,27 @@ const styles = StyleSheet.create({
   leaderBorder: {
     borderWidth: 2,
     borderColor: "#38bdf8",
+  },
+  joinButton: {
+    marginTop: 32,
+    backgroundColor: "#8b5cf6",
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  joinButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  arrowButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  arrowButtonText: {
+    fontSize: 20,
+    color: "#7c3aed",
+    fontWeight: "bold",
   },
 });
