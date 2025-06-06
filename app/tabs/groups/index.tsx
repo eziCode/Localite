@@ -73,7 +73,8 @@ export default function GroupsPage() {
     const { data, error } = await supabase
       .from("group_join_requests")
       .select("*, group:group_id (name)")
-      .eq("to_id", userId);
+      .eq("to_id", userId)
+      .eq("status", "pending");
 
     if (error) console.error("Error fetching join requests:", error);
     else setJoinRequests(data);
@@ -110,6 +111,7 @@ export default function GroupsPage() {
         if (user) {
           fetchUserGroups(user.id);
           fetchSuggestedGroups(user.id);
+          fetchJoinRequests(user.id);
         }
       };
       fetchOnFocus();
