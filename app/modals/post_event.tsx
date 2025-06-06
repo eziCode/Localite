@@ -53,7 +53,6 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
     if (input.length < 2) return setPredictions([]);
 
     try {
-      console.log("Coords:", coords);
       const response = await fetch(
         "https://places.googleapis.com/v1/places:autocomplete",
         {
