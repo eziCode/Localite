@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import * as Location from "expo-location";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -7,7 +8,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -29,10 +30,30 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
 
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn("Permission to access location was denied");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      setCoords({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+    })();
+  }, []);
+
+
   const fetchAutocompletePredictions = async (input: string) => {
     if (input.length < 2) return setPredictions([]);
 
     try {
+      console.log("Coords:", coords);
       const response = await fetch(
         "https://places.googleapis.com/v1/places:autocomplete",
         {
@@ -47,7 +68,7 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
             input,
             locationBias: {
               circle: {
-                center: { latitude: 37.7749, longitude: -122.4194 },
+                center: coords || { latitude: 37.7749, longitude: -122.4194 },
                 radius: 5000.0,
               },
             },
@@ -200,6 +221,9 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
   );
 };
 
+
+export default PostEventModal;
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   scroll: { paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60 },
@@ -293,5 +317,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
-export default PostEventModal;
