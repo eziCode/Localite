@@ -75,6 +75,7 @@ export default function GroupsPage() {
         setUser(user);
         if (user) {
           fetchUserGroups(user.id);
+          fetchSuggestedGroups(user.id);
         }
       };
       fetchAll();
@@ -143,7 +144,7 @@ export default function GroupsPage() {
                   pathname: "/tabs/groups/foreign_groups_view",
                   params: { 
                     group: JSON.stringify(item),
-                    user: user?.id,
+                    user: JSON.stringify(user),
                   },
                 })}
                 style={styles.suggestedGroup}

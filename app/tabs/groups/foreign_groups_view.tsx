@@ -15,9 +15,10 @@ export default function ForeignGroupsView() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const groupParam = params?.group;
+  const userParam = params?.user;
 
   const parsedGroup: Group | null = groupParam ? JSON.parse(groupParam as string) : null;
-  const parsedUser: string | null = typeof params?.user === "string" ? params.user : Array.isArray(params?.user) ? params.user[0] : null;
+  const parsedUser: import('@supabase/supabase-js').User | null = userParam ? JSON.parse(userParam as string) : null;
 
   if (!parsedGroup || !parsedUser) {
     return (
@@ -79,7 +80,7 @@ export default function ForeignGroupsView() {
       // Join instantly
       const { error } = await supabase
         .from("groups")
-        .update({ members: [...parsedGroup.members, parsedUser] })
+        .update({ members: [...parsedGroup.members, parsedUser.id] })
         .eq("id", parsedGroup.id);
 
       if (error) {
@@ -88,21 +89,24 @@ export default function ForeignGroupsView() {
         router.back();
       }
     } 
-    // else if (parsedGroup.visibility === "request") {
-    //   // Request to join
-    //   const { error } = await supabase
-    //     .from("group_requests")
-    //     .insert({
-    //       group_id: parsedGroup.id,
-    //       user_id: parsedUser,
-    //     });
-    //   if (error) {
-    //     console.error("Error requesting to join group:", error);
-    //   } else {
-    //     alert("Request sent! The group leader will review it soon.");
-    //     router.back();
-    //   }
-    // }
+    else if (parsedGroup.visibility === "request") {
+      // Request to join
+      const { error } = await supabase
+        .from("group_join_requests")
+        .insert({
+          group_id: parsedGroup.id,
+          from_id: parsedUser.id,
+          status: "pending",
+          to_id: founder,
+          message: `${parsedUser.user_metadata.username} has requested to join your group ${parsedGroup.name}.`
+        });
+      if (error) {
+        console.error("Error requesting to join group:", error);
+      } else {
+        alert("Request sent! The group leader will review it soon.");
+        router.back();
+      }
+    }
   };
 
   return (
