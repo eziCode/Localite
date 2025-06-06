@@ -2,6 +2,7 @@ import type { PublicUser } from "@/types/public_user";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -103,11 +104,12 @@ export default function ForeignGroupsView() {
       if (error) {
         console.error("Error requesting to join group:", error);
       } else {
-        alert("Request sent! The group leader will review it soon.");
-        router.back();
+        setShowRequestSentModal(true);
       }
     }
   };
+
+  const [showRequestSentModal, setShowRequestSentModal] = useState(false);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -208,6 +210,33 @@ export default function ForeignGroupsView() {
           </Text>
         </TouchableOpacity>
       )}
+      
+<Modal
+  visible={showRequestSentModal}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setShowRequestSentModal(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalBox}>
+      <Text style={styles.modalTitle}>🎉 Request Sent!</Text>
+      <Text style={styles.modalMessage}>
+        We'll notify the group leader that you want to join{" "}
+        <Text style={{ fontWeight: "bold" }}>{parsedGroup.name}</Text>.
+      </Text>
+      <TouchableOpacity
+        style={styles.modalButton}
+        onPress={() => {
+          setShowRequestSentModal(false);
+          router.back();
+        }}
+      >
+        <Text style={styles.modalButtonText}>Got it!</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
     </ScrollView>
   );
 }
@@ -357,4 +386,51 @@ const styles = StyleSheet.create({
     color: "#7c3aed",
     fontWeight: "bold",
   },
+  modalOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 24,
+  zIndex: 999,
+},
+modalBox: {
+  backgroundColor: "white",
+  padding: 24,
+  borderRadius: 16,
+  width: "100%",
+  maxWidth: 340,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 6,
+  elevation: 10,
+},
+modalTitle: {
+  fontSize: 22,
+  fontWeight: "700",
+  color: "#4c1d95",
+  marginBottom: 12,
+},
+modalMessage: {
+  fontSize: 16,
+  color: "#333",
+  marginBottom: 20,
+},
+modalButton: {
+  backgroundColor: "#7c3aed",
+  paddingVertical: 12,
+  borderRadius: 10,
+  alignItems: "center",
+},
+modalButtonText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "600",
+},
+
 });
