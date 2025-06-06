@@ -86,21 +86,69 @@ export default function GroupsPage() {
       .from("group_join_requests")
       .select("*, group:group_id (name)")
       .eq("from_id", userId)
-      .neq("status", "pending");
+      .neq("status", "pending")
+      .neq("acknowledged", true);
 
     if (error) console.error("Error fetching own join requests:", error);
     else setOwnJoinRequests(data);
   };
 
   const handleDismissResult = async (id: number) => {
-    const { error } = await supabase
-      .from("group_join_requests")
-      .delete()
-      .eq("id", id);
-    if (error) {
-      console.error("Error dismissing join request result:", error);
+    const request = ownJoinRequests.find((r) => r.id === id);
+    if (!request) return;
+
+    const { group_id, from_id, status } = request;
+
+    if (status === "accepted") {
+      // Add user to the group's members list
+      const { data: groupData, error: fetchError } = await supabase
+        .from("groups")
+        .select("members")
+        .eq("id", group_id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching group:", fetchError);
+        return;
+      }
+
+      const updatedMembers = Array.from(new Set([...(groupData?.members ?? []), from_id]));
+
+      const { error: updateError } = await supabase
+        .from("groups")
+        .update({ members: updatedMembers })
+        .eq("id", group_id);
+
+      if (updateError) {
+        console.error("Error updating group members:", updateError);
+        return;
+      }
+
+      // Delete the accepted join request
+      const { error: deleteError } = await supabase
+        .from("group_join_requests")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        console.error("Error deleting accepted request:", deleteError);
+        return;
+      }
+      fetchUserGroups(user?.id!);
+    } else if (status === "rejected") {
+      // Set the acknowledged status to true
+      const { error: acknowledgeError } = await supabase
+        .from("group_join_requests")
+        .update({ acknowledged: true })
+        .eq("id", id);
+
+        if (acknowledgeError) {
+          console.error("Error acknowledging rejected request:", acknowledgeError);
+          return;
+        }
     }
-    setOwnJoinRequests(prev => prev.filter(req => req.id !== id));
+    // If status is rejected, just remove from UI. Trigger handles DB cleanup later.
+    setOwnJoinRequests((prev) => prev.filter((req) => req.id !== id));
   };
 
   useEffect(() => {
