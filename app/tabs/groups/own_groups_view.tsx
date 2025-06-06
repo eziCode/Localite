@@ -21,7 +21,7 @@ export default function OwnGroupsView() {
 
   const MoreArrow = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={styles.moreArrow}>
-        <Text style={{ fontSize: 18, color: "#7c3aed" }}>›</Text>
+        <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
     </TouchableOpacity>
     );
 
