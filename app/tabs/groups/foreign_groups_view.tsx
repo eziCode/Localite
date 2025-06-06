@@ -28,6 +28,7 @@ export default function ForeignGroupsView() {
   const parsedUser: import('@supabase/supabase-js').User | null = userParam ? JSON.parse(userParam as string) : null;
 
   const founder = parsedGroup?.founder;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const leaders = parsedGroup?.leaders || [];
   const members = parsedGroup?.members.filter(
     id => id !== founder && !leaders.includes(id)

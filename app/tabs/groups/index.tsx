@@ -215,7 +215,9 @@ export default function GroupsPage() {
               keyExtractor={(item) => item.id.toString()}
               scrollEnabled={false}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.card}>
+                <TouchableOpacity
+                onPress={() => router.push({ pathname: "/tabs/groups/own_groups_view", params: { group: JSON.stringify(item), user: JSON.stringify(user) } })}
+                style={styles.card}>
                   <Text style={styles.groupName}>{item.name}</Text>
                   <Text style={styles.groupMeta}>{item.members?.length ?? 0} {item.members?.length === 1 ? "member" : "members"}</Text>
                 </TouchableOpacity>
