@@ -26,6 +26,9 @@ export default function GroupsPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  const [selectedRequest, setSelectedRequest] = useState<JoinRequestWithGroup | null>(null);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+
   // Helper functions
   const fetchUserGroups = async (userId: string) => {
     const { data: userGroupsData, error: userGroupsError } = await supabase
@@ -215,7 +218,13 @@ export default function GroupsPage() {
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
             renderItem={({ item }) => (
-              <View style={styles.requestCard}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedRequest(item);
+                  setShowRequestModal(true);
+                }}
+                style={styles.requestCard}
+              >
                 <Text style={styles.requestText}>
                   Request to join group: {item.group.name}
                 </Text>
@@ -225,7 +234,7 @@ export default function GroupsPage() {
                 <Text style={styles.requestDate}>
                   Requested on {new Date(item.created_at).toLocaleDateString()}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
           />
         </>
@@ -244,6 +253,50 @@ export default function GroupsPage() {
         </View>
       </ScrollView>
       </SafeAreaView>
+      <Modal
+        visible={showRequestModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowRequestModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              onPress={() => setShowRequestModal(false)}
+              style={styles.closeButton}
+            >
+              <Text style={{ fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>
+              Join Request for {selectedRequest?.group.name}
+            </Text>
+            <Text style={styles.modalMessage}>{selectedRequest?.message}</Text>
+
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: "#7ac47a" }]}
+                onPress={() => {
+                  // TODO: handle accept logic
+                  setShowRequestModal(false);
+                }}
+              >
+                <Text style={styles.actionText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: "#d36f6f" }]}
+                onPress={() => {
+                  // TODO: handle reject logic
+                  setShowRequestModal(false);
+                }}
+              >
+                <Text style={styles.actionText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal
         animationType="slide"
         visible={showCreateModal}
@@ -373,5 +426,51 @@ requestDate: {
   marginTop: 4,
   fontStyle: "italic",
 },
-
+modalOverlay: {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.4)",
+},
+modalContent: {
+  width: "85%",
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  padding: 20,
+  alignItems: "center",
+},
+modalTitle: {
+  fontSize: 20,
+  fontWeight: "700",
+  marginBottom: 10,
+  color: "#3a3a3a",
+  textAlign: "center",
+},
+modalMessage: {
+  fontSize: 15,
+  color: "#555",
+  marginBottom: 20,
+  textAlign: "center",
+},
+actionRow: {
+  flexDirection: "row",
+  gap: 12,
+},
+actionButton: {
+  flex: 1,
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  borderRadius: 8,
+  alignItems: "center",
+},
+actionText: {
+  color: "#fff",
+  fontWeight: "600",
+},
+closeButton: {
+  position: "absolute",
+  top: 10,
+  right: 10,
+  zIndex: 1,
+},
 });

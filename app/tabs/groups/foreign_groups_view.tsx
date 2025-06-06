@@ -17,37 +17,27 @@ export default function ForeignGroupsView() {
   const params = useLocalSearchParams();
   const groupParam = params?.group;
   const userParam = params?.user;
-
-  const parsedGroup: Group | null = groupParam ? JSON.parse(groupParam as string) : null;
-  const parsedUser: import('@supabase/supabase-js').User | null = userParam ? JSON.parse(userParam as string) : null;
-
-  if (!parsedGroup || !parsedUser) {
-    return (
-      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
-        <Text style={{ fontSize: 20, color: "#7c3aed", textAlign: "center" }}>
-          No connection right now. Please try again later.
-        </Text>
-      </View>
-    );
-  }
+  const [showRequestSentModal, setShowRequestSentModal] = useState(false);
+  const [showRequestDeniedModal, setShowRequestDeniedModal] = useState(false);
 
   const [founderUser, setFounderUser] = useState<PublicUser | null>(null);
   const [leaderUsers, setLeaderUsers] = useState<PublicUser[]>([]);
   const [memberUsers, setMemberUsers] = useState<PublicUser[]>([]);
 
-  if (!parsedGroup) return;
+  const parsedGroup: Group | null = groupParam ? JSON.parse(groupParam as string) : null;
+  const parsedUser: import('@supabase/supabase-js').User | null = userParam ? JSON.parse(userParam as string) : null;
 
-  const founder = parsedGroup.founder;
-  const leaders = parsedGroup.leaders || [];
-  const members = parsedGroup.members.filter(
+  const founder = parsedGroup?.founder;
+  const leaders = parsedGroup?.leaders || [];
+  const members = parsedGroup?.members.filter(
     id => id !== founder && !leaders.includes(id)
   );
 
   const leaderLength = leaders.length;
-  const memberLength = members.length;
+  const memberLength = members?.length;
 
   const leadersToFetch = leaderLength > 5 ? 5 : leaderLength;
-  const membersToFetch = memberLength > 5 ? 5 : memberLength;
+  const membersToFetch = memberLength ? (memberLength > 5 ? 5 : memberLength) : 0;
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -65,7 +55,7 @@ export default function ForeignGroupsView() {
       const { data: memberData } = await supabase
         .from("users")
         .select("*")
-        .in("user_id", members.slice(0, membersToFetch))
+        .in("user_id", (members ?? []).slice(0, membersToFetch))
         .limit(membersToFetch);
 
       setFounderUser(founderData?.[0] || null);
@@ -74,7 +64,19 @@ export default function ForeignGroupsView() {
     };
 
     fetchAll();
-  }, [parsedGroup]);
+  }, [parsedGroup, founder, leaders, leadersToFetch, members, membersToFetch]);
+
+  if (!parsedGroup || !parsedUser) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ fontSize: 20, color: "#7c3aed", textAlign: "center" }}>
+          No connection right now. Please try again later.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!parsedGroup) return;
 
   const handleJoinGroup = async () => {
     if (parsedGroup.visibility === "open") {
@@ -134,9 +136,6 @@ export default function ForeignGroupsView() {
       }
     }
   };
-
-  const [showRequestSentModal, setShowRequestSentModal] = useState(false);
-  const [showRequestDeniedModal, setShowRequestDeniedModal] = useState(false);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -208,7 +207,7 @@ export default function ForeignGroupsView() {
 
       <Text style={styles.sectionTitleRow}>
         <Text>👥 Members ({memberLength})</Text>
-        {memberLength > 5 && (
+        {memberLength ? memberLength > 5 && (
           <TouchableOpacity
             style={styles.arrowButton}
             onPress={() => {
@@ -218,7 +217,7 @@ export default function ForeignGroupsView() {
           >
             <Text style={styles.arrowButtonText}>→</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
       </Text>
       <View style={styles.members}>
         {memberUsers.map((user, i) => (
@@ -248,7 +247,7 @@ export default function ForeignGroupsView() {
     <View style={styles.modalBox}>
       <Text style={styles.modalTitle}>🎉 Request Sent!</Text>
       <Text style={styles.modalMessage}>
-        We'll notify the group leader that you want to join{" "}
+        We&apos;ll notify the group leader that you want to join{" "}
         <Text style={{ fontWeight: "bold" }}>{parsedGroup.name}</Text>.
       </Text>
       <TouchableOpacity
@@ -273,7 +272,7 @@ export default function ForeignGroupsView() {
     <View style={styles.modalBox}>
       <Text style={styles.modalTitle}>🚫 Request Blocked</Text>
       <Text style={styles.modalMessage}>
-        You've already requested to join{" "}
+        You&apos;ve already requested to join{" "}
         <Text style={{ fontWeight: "bold" }}>{parsedGroup.name}</Text>. Please wait until your previous request is processed or a week has passed.
       </Text>
       <TouchableOpacity
