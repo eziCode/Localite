@@ -135,8 +135,8 @@ export default function OwnGroupsView() {
 
 
             {(user.id === founder || leaders.includes(user.id)) && (
-            <TouchableOpacity style={styles.postButton}>
-                <Text onPress={() => setShowPostEventModal(true)} style={styles.postButtonText}>+ Post Event</Text>
+            <TouchableOpacity onPress={() => setShowPostEventModal(true)} style={styles.postButton}>
+                <Text style={styles.postButtonText}>+ Post Event</Text>
             </TouchableOpacity>
             )}
 

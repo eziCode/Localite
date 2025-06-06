@@ -54,7 +54,7 @@ export default function ForeignGroupsView() {
 
   const MoreArrow = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={{ padding: 8 }}>
-      <Text style={{ fontSize: 18, color: "#7c3aed" }}>›</Text>
+      <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
     </TouchableOpacity>
   );
 
