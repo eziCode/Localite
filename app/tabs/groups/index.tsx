@@ -1,3 +1,4 @@
+import { JoinRequestWithGroup } from "@/types/join_request_with_group";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -21,6 +22,7 @@ export default function GroupsPage() {
   const [suggestedGroups, setSuggestedGroups] = useState<Group[]>([]);
   const [inviteCode, setInviteCode] = useState("");
   const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
+  const [joinRequests, setJoinRequests] = useState<JoinRequestWithGroup[]>([]);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -82,6 +84,19 @@ export default function GroupsPage() {
     }
   };
 
+  const fetchJoinRequests = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("group_join_requests")
+      .select(`*, group:group_id (name)`)
+      .eq("to_id", userId)
+  
+    if (error) {
+      console.error("Error fetching join requests:", error);
+      return;
+    } else {
+      setJoinRequests(data);
+    }
+  };
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -90,6 +105,7 @@ export default function GroupsPage() {
       if (user) {
         fetchUserGroups(user.id);
         fetchSuggestedGroups(user.id);
+        fetchJoinRequests(user.id);
       }
     };
     fetchAll();
@@ -191,7 +207,29 @@ export default function GroupsPage() {
             )}
           />
         )}
-
+        {joinRequests.length > 0 && (
+  <>
+    <Text style={styles.title}>Join Requests</Text>
+          <FlatList
+            data={joinRequests}
+            keyExtractor={(item) => item.id.toString()}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <View style={styles.requestCard}>
+                <Text style={styles.requestText}>
+                  Request to join group: {item.group.name}
+                </Text>
+                <Text style={styles.requestSubText}>
+                  Status: {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                </Text>
+                <Text style={styles.requestDate}>
+                  Requested on {new Date(item.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+          />
+        </>
+      )}
         <Text style={styles.title}>Join by Invite Code</Text>
         <View style={styles.inviteRow}>
           <TextInput
@@ -307,4 +345,33 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
+  requestCard: {
+  backgroundColor: "#fff9fc",
+  borderLeftColor: "#ff90c2",
+  borderLeftWidth: 4,
+  borderRadius: 10,
+  padding: 14,
+  marginBottom: 12,
+  shadowColor: "#000",
+  shadowOpacity: 0.03,
+  shadowRadius: 2,
+  elevation: 1,
+},
+requestText: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#3a3a3a",
+},
+requestSubText: {
+  fontSize: 14,
+  color: "#8a8a8a",
+  marginTop: 4,
+},
+requestDate: {
+  fontSize: 13,
+  color: "#b36f9c",
+  marginTop: 4,
+  fontStyle: "italic",
+},
+
 });
