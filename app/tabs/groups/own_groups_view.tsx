@@ -2,15 +2,17 @@ import { PublicUser } from "@/types/public_user";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
+import PostEventModal from "../../modals/post_event";
 
 export default function OwnGroupsView() {
   const router = useRouter();
@@ -18,6 +20,7 @@ export default function OwnGroupsView() {
   const group = JSON.parse(groupStr as string) as Group;
   const user = JSON.parse(userStr as string);
   const [userInfos, setUserInfos] = useState<PublicUser[]>([]);
+  const [showPostEventModal, setShowPostEventModal] = useState(false);
 
   const MoreArrow = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={styles.moreArrow}>
@@ -61,6 +64,7 @@ export default function OwnGroupsView() {
   );
 
   return (
+    <>
     <SafeAreaView style={styles.container}>
        <View style={styles.header}>
       <TouchableOpacity onPress={() => router.back()}>
@@ -132,7 +136,7 @@ export default function OwnGroupsView() {
 
             {(user.id === founder || leaders.includes(user.id)) && (
             <TouchableOpacity style={styles.postButton}>
-                <Text style={styles.postButtonText}>+ Post Event</Text>
+                <Text onPress={() => setShowPostEventModal(true)} style={styles.postButtonText}>+ Post Event</Text>
             </TouchableOpacity>
             )}
 
@@ -145,6 +149,19 @@ export default function OwnGroupsView() {
         </View>
       </ScrollView>
     </SafeAreaView>
+
+    <Modal
+        animationType="slide"
+        visible={showPostEventModal}
+        onRequestClose={() => setShowPostEventModal(false)}
+        presentationStyle="pageSheet"
+      >
+        <PostEventModal
+          onClose={() => setShowPostEventModal(false)}
+        />
+      </Modal>
+
+    </>
   );
 }
 
