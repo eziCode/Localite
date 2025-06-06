@@ -41,19 +41,47 @@ export default function GroupsPage() {
   };
 
   const fetchSuggestedGroups = async (userId: string) => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Fetch recent or pending join requests
+    const { data: requests, error: requestError } = await supabase
+      .from("group_join_requests")
+      .select("group_id, status, created_at")
+      .eq("from_id", userId);
+
+    if (requestError) {
+      console.error("Error fetching join requests:", requestError);
+      return;
+    }
+
+    const blockedGroupIds = new Set(
+      requests
+        ?.filter(req =>
+          req.status === "pending" ||
+          (req.created_at && new Date(req.created_at) > oneWeekAgo)
+        )
+        .map(req => req.group_id)
+    );
+
+    // Fetch suggested groups
     const { data: suggestedGroupsData, error: suggestedGroupsError } = await supabase
       .from("groups")
       .select("*")
       .not("members", "cs", JSON.stringify([userId]))
-      .neq("visibility", "hidden")
-      .limit(5);
+      .neq("visibility", "hidden");
 
     if (suggestedGroupsError) {
       console.error(suggestedGroupsError);
     } else {
-      setSuggestedGroups(suggestedGroupsData);
+      // Filter out groups that have pending/recent requests
+      const filteredGroups = suggestedGroupsData.filter(
+        group => !blockedGroupIds.has(group.id)
+      );
+      setSuggestedGroups(filteredGroups);
     }
   };
+
 
   useEffect(() => {
     const fetchAll = async () => {
