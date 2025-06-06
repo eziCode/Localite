@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
+    configureReanimatedLogger,
     runOnJS,
     useAnimatedStyle,
     useSharedValue,
@@ -21,6 +22,10 @@ import Animated, {
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+
+configureReanimatedLogger({
+    strict: false
+});
 
 const GroupJoinRequests = () => {
   const router = useRouter();

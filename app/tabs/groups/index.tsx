@@ -23,6 +23,7 @@ export default function GroupsPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequestWithGroup[]>([]);
+  const [ownJoinRequests, setOwnJoinRequests] = useState<JoinRequestWithGroup[]>([]);
   const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: number]: JoinRequestWithGroup[] }>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -80,6 +81,28 @@ export default function GroupsPage() {
     else setJoinRequests(data);
   };
 
+  const fetchOwnJoinRequests = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("group_join_requests")
+      .select("*, group:group_id (name)")
+      .eq("from_id", userId)
+      .neq("status", "pending");
+
+    if (error) console.error("Error fetching own join requests:", error);
+    else setOwnJoinRequests(data);
+  };
+
+  const handleDismissResult = async (id: number) => {
+    const { error } = await supabase
+      .from("group_join_requests")
+      .delete()
+      .eq("id", id);
+    if (error) {
+      console.error("Error dismissing join request result:", error);
+    }
+    setOwnJoinRequests(prev => prev.filter(req => req.id !== id));
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -88,6 +111,7 @@ export default function GroupsPage() {
         fetchUserGroups(user.id);
         fetchSuggestedGroups(user.id);
         fetchJoinRequests(user.id);
+        fetchOwnJoinRequests(user.id);
       }
     };
     fetchAll();
@@ -200,6 +224,36 @@ export default function GroupsPage() {
               ))}
             </>
           )}
+          {ownJoinRequests.length > 0 && (
+          <>
+            <Text style={styles.title}>Join Request Results</Text>
+            {ownJoinRequests.map((result) => (
+              <View key={result.id} style={styles.resultCard}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View>
+                    <Text style={styles.resultGroup}>{result.group.name}</Text>
+                    <Text
+                      style={[
+                        styles.resultStatus,
+                        result.status === "accepted"
+                          ? { color: "#16a34a" }
+                          : { color: "#dc2626" },
+                      ]}
+                    >
+                      {result.status === "accepted" ? "Accepted ✅" : "Rejected ❌"}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleDismissResult(result.id)}
+                    style={styles.dismissButton}
+                  >
+                    <Text style={styles.dismissText}>Dismiss</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
 
           <Text style={styles.title}>Join by Invite Code</Text>
           <View style={styles.inviteRow}>
@@ -248,4 +302,36 @@ const styles = StyleSheet.create({
   requestCard: { backgroundColor: "#fff9fc", borderLeftColor: "#ff90c2", borderLeftWidth: 4, borderRadius: 10, padding: 14, marginBottom: 12, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 },
   requestText: { fontSize: 16, fontWeight: "600", color: "#3a3a3a" },
   requestDate: { fontSize: 13, color: "#b36f9c", marginTop: 4, fontStyle: "italic" },
+  resultCard: {
+  backgroundColor: "#f9f9ff",
+  borderRadius: 10,
+  padding: 14,
+  marginBottom: 10,
+  shadowColor: "#000",
+  shadowOpacity: 0.04,
+  shadowRadius: 2,
+  elevation: 1,
+},
+resultGroup: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#3a3a3a",
+},
+resultStatus: {
+  marginTop: 4,
+  fontSize: 14,
+  fontWeight: "500",
+},
+dismissButton: {
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  backgroundColor: "#e5e7eb",
+  borderRadius: 6,
+},
+dismissText: {
+  color: "#374151",
+  fontWeight: "500",
+  fontSize: 14,
+},
+
 });
