@@ -118,19 +118,32 @@ const GroupJoinRequests = () => {
               {/* Only render GestureDetector if current exists */}
               <GestureDetector gesture={pan}>
                 <Animated.View style={[styles.card, animatedStyle]}>
-                    <Text style={styles.requestText}>{current.message}</Text>
                     {(() => {
                         const user = usersRequestingToJoin.find(
-                        (u) => u.user_id === current.from_id
+                            (u) => u.user_id === current.from_id
                         );
                         if (!user) return null;
+
+                        const initials = user.user_name
+                            .split(" ")
+                            .map((s) => s[0])
+                            .join("")
+                            .toUpperCase();
+
                         return (
-                        <>
-                            <Text style={styles.userNameText}>Username: {user.user_name}</Text>
-                            <Text style={styles.userAgeText}>Age: {user.age}</Text>
-                        </>
+                            <View style={styles.userCard}>
+                            <View style={styles.avatar}>
+                                <Text style={styles.avatarText}>{initials}</Text>
+                            </View>
+                            <Text style={styles.userName}>{user.user_name}</Text>
+                            <Text style={styles.userAge}>Age: {user.age}</Text>
+                            <View style={styles.messageBox}>
+                                <Text style={styles.messageText}>&quot;{current.message}&quot;</Text>
+                            </View>
+                            </View>
                         );
-                    })()}
+                        })()}
+
                     </Animated.View>
 
               </GestureDetector>
@@ -152,7 +165,13 @@ const GroupJoinRequests = () => {
               translateY.value = 0;
               return null;
             })()}
-            <Text style={styles.doneText}>You&apos;re all caught up 🎉</Text>
+            <View style={styles.doneContainer}>
+            <View style={styles.doneCard}>
+                <Text style={styles.doneTitle}>No more requests</Text>
+                <Text style={styles.doneSubtitle}>You&apos;ve reviewed all join requests for this group 🥳</Text>
+            </View>
+            </View>
+
           </>
         )}
       </View>
@@ -251,6 +270,91 @@ const styles = StyleSheet.create({
 userAgeText: {
   fontSize: 15,
   color: "#6b7280",
+},
+userCard: {
+  alignItems: "center",
+  padding: 20,
+  backgroundColor: "#fff",
+  borderRadius: 12,
+  width: "100%",
+  shadowColor: "#000",
+  shadowOpacity: 0.05,
+  shadowRadius: 6,
+  elevation: 3,
+},
+
+avatar: {
+  width: 80,
+  height: 80,
+  borderRadius: 40,
+  backgroundColor: "#d8b4fe",
+  justifyContent: "center",
+  alignItems: "center",
+  marginBottom: 12,
+},
+
+avatarText: {
+  fontSize: 28,
+  color: "#6b21a8",
+  fontWeight: "bold",
+},
+
+userName: {
+  fontSize: 20,
+  fontWeight: "600",
+  color: "#333",
+  marginBottom: 4,
+},
+
+userAge: {
+  fontSize: 16,
+  color: "#6b7280",
+  marginBottom: 12,
+},
+
+messageBox: {
+  backgroundColor: "#f3e8ff",
+  padding: 16,
+  borderRadius: 8,
+  marginTop: 8,
+},
+
+messageText: {
+  fontSize: 16,
+  fontStyle: "italic",
+  color: "#4b5563",
+  textAlign: "center",
+},
+doneContainer: {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+},
+
+doneCard: {
+  backgroundColor: "#f0f9ff",
+  padding: 24,
+  borderRadius: 16,
+  shadowColor: "#000",
+  shadowOpacity: 0.08,
+  shadowRadius: 8,
+  elevation: 4,
+  alignItems: "center",
+  maxWidth: SCREEN_WIDTH * 0.8,
+},
+
+doneTitle: {
+  fontSize: 22,
+  fontWeight: "700",
+  color: "#0f172a",
+  marginBottom: 8,
+  textAlign: "center",
+},
+
+doneSubtitle: {
+  fontSize: 16,
+  color: "#334155",
+  textAlign: "center",
 },
 
 });
