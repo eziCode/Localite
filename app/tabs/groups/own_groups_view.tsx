@@ -62,9 +62,11 @@ export default function OwnGroupsView() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+       <View style={styles.header}>
+      <TouchableOpacity onPress={() => router.back()}>
         <Text style={styles.backButtonText}>← Back</Text>
       </TouchableOpacity>
+    </View>
 
       <Text style={styles.groupTitle}>{group.name}</Text>
 
@@ -128,9 +130,12 @@ export default function OwnGroupsView() {
             )}
 
 
-        <TouchableOpacity style={styles.postButton}>
-          <Text style={styles.postButtonText}>+ Post Event</Text>
-        </TouchableOpacity>
+            {(user.id === founder || leaders.includes(user.id)) && (
+            <TouchableOpacity style={styles.postButton}>
+                <Text style={styles.postButtonText}>+ Post Event</Text>
+            </TouchableOpacity>
+            )}
+
 
         <View style={styles.eventsContainer}>
           <Text style={styles.sectionHeader}>Upcoming Events</Text>
@@ -144,9 +149,7 @@ export default function OwnGroupsView() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fafafa", paddingTop: 40 },
-  backButton: { paddingHorizontal: 20, paddingBottom: 10 },
-  backButtonText: { fontSize: 18, color: "#7c3aed" },
+  container: { backgroundColor: "#fafafa", flex: 1 },
   groupTitle: {
     fontSize: 28,
     fontWeight: "700",
@@ -227,6 +230,22 @@ const styles = StyleSheet.create({
 },
 moreArrow: {
   padding: 8,
+},
+safeArea: {
+  flex: 1,
+  backgroundColor: "#fafafa",
+},
+header: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingHorizontal: 20,
+  paddingBottom: 10,
+  backgroundColor: "#fafafa",
+},
+backButtonText: {
+  fontSize: 18,
+  color: "#7c3aed",
 },
 
 });
