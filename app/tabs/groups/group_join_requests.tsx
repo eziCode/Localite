@@ -52,6 +52,7 @@ const GroupJoinRequests = () => {
 
         if (isRight || isLeft) {
             translateX.value = withTiming(isRight ? SCREEN_WIDTH : -SCREEN_WIDTH, { duration: 300 }, () => {
+            runOnJS(updateSupabaseRequestStatus)(current.id, isRight ? "accepted" : "rejected");
             runOnJS(goToNextCard)();
             });
             translateY.value = withTiming(-50, { duration: 200 });
@@ -69,16 +70,33 @@ const GroupJoinRequests = () => {
     ],
   }));
 
+  const updateSupabaseRequestStatus = async (requestId: string, status: string) => {
+    const { error } = await supabase
+      .from("group_join_requests")
+      .update({ status })
+      .eq("id", requestId);
+
+    if (error) {
+      console.error("Error updating request status:", error);
+    }
+  };
+
   const handleAccept = () => {
     translateX.value = 0;
     translateY.value = 0;
     setCurrentIndex((prev) => prev + 1);
+    if (current) {
+      updateSupabaseRequestStatus(current.id, "accepted");
+    }
   };
 
   const handleReject = () => {
     translateX.value = 0;
     translateY.value = 0;
     setCurrentIndex((prev) => prev + 1);
+    if (current) {
+      updateSupabaseRequestStatus(current.id, "rejected");
+    }
   };
 
   const remaining = parsedRequests.length - currentIndex;
