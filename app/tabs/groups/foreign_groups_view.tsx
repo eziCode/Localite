@@ -91,7 +91,33 @@ export default function ForeignGroupsView() {
       }
     } 
     else if (parsedGroup.visibility === "request") {
-      // Request to join
+      // Check for existing request
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+      const { data: existingRequests, error: checkError } = await supabase
+      .from("group_join_requests")
+      .select("*")
+      .eq("group_id", parsedGroup.id)
+      .eq("from_id", parsedUser.id)
+      .order("created_at", { ascending: false });
+
+      if (checkError) {
+        console.error("Error checking existing requests:", checkError);
+        return;
+      }
+
+      const recentOrPending = existingRequests?.find(req =>
+        req.status === "pending" ||
+        (req.created_at && new Date(req.created_at) > oneWeekAgo)
+      );
+
+      if (recentOrPending) {
+        setShowRequestDeniedModal(true);
+        return;
+      }
+
+      // Submit new request
       const { error } = await supabase
         .from("group_join_requests")
         .insert({
@@ -110,6 +136,7 @@ export default function ForeignGroupsView() {
   };
 
   const [showRequestSentModal, setShowRequestSentModal] = useState(false);
+  const [showRequestDeniedModal, setShowRequestDeniedModal] = useState(false);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -236,6 +263,31 @@ export default function ForeignGroupsView() {
     </View>
   </View>
 </Modal>
+<Modal
+  visible={showRequestDeniedModal}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setShowRequestDeniedModal(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalBox}>
+      <Text style={styles.modalTitle}>🚫 Request Blocked</Text>
+      <Text style={styles.modalMessage}>
+        You've already requested to join{" "}
+        <Text style={{ fontWeight: "bold" }}>{parsedGroup.name}</Text>. Please wait until your previous request is processed or a week has passed.
+      </Text>
+      <TouchableOpacity
+        style={styles.modalButton}
+        onPress={() => {
+          setShowRequestDeniedModal(false);
+          router.back();
+        }}>
+        <Text style={styles.modalButtonText}>Okay</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
 
     </ScrollView>
   );
