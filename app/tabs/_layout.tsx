@@ -19,14 +19,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="inbox"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="mail-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="groups"
         options={{
           headerShown: false,
@@ -40,14 +32,6 @@ export default function TabsLayout() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="compass-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />
