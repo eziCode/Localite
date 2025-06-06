@@ -1,3 +1,5 @@
+import { supabase } from "@/lib/supabase";
+import { PublicUser } from "@/types/public_user";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -81,10 +83,23 @@ const GroupJoinRequests = () => {
 
   const remaining = parsedRequests.length - currentIndex;
 
-  useEffect(() => {
-    
+  const [usersRequestingToJoin, setUsersRequestingToJoin] = useState<PublicUser[]>([]);
 
-  }, []);
+  useEffect(() => {
+    const fetchUserRequestingToJoin = async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .in("user_id", parsedRequests.map((req: any) => req.from_id));
+
+        if (error) {
+          console.error("Error fetching users requesting to join:", error);
+          return;
+        }
+        setUsersRequestingToJoin(data || []);
+    };
+    fetchUserRequestingToJoin();
+  }, [parsedRequests]);
 
   return (
     <>
@@ -103,8 +118,21 @@ const GroupJoinRequests = () => {
               {/* Only render GestureDetector if current exists */}
               <GestureDetector gesture={pan}>
                 <Animated.View style={[styles.card, animatedStyle]}>
-                  <Text style={styles.requestText}>{current.message}</Text>
-                </Animated.View>
+                    <Text style={styles.requestText}>{current.message}</Text>
+                    {(() => {
+                        const user = usersRequestingToJoin.find(
+                        (u) => u.user_id === current.from_id
+                        );
+                        if (!user) return null;
+                        return (
+                        <>
+                            <Text style={styles.userNameText}>Username: {user.user_name}</Text>
+                            <Text style={styles.userAgeText}>Age: {user.age}</Text>
+                        </>
+                        );
+                    })()}
+                    </Animated.View>
+
               </GestureDetector>
             </View>
             <View style={styles.actionRow}>
@@ -213,6 +241,18 @@ const styles = StyleSheet.create({
     marginTop: 100,
     color: "#7c3aed",
   },
+  userNameText: {
+  marginTop: 12,
+  fontSize: 16,
+  fontWeight: "500",
+  color: "#4b5563", // muted gray
+},
+
+userAgeText: {
+  fontSize: 15,
+  color: "#6b7280",
+},
+
 });
 
 export default GroupJoinRequests;
