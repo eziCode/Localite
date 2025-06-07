@@ -3,12 +3,12 @@ import { format } from "date-fns";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -69,9 +69,9 @@ export default function OwnGroupsView() {
     fetchMemberData();
   }, [founder, group.id, group.members, leaderToFetchCount, leaders, memberToFetchCount, members]);
 
-  const founderUser = userInfos.find((u) => u.user_id === founder);
-  const leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
-  const membersUserInfos = userInfos.filter((u) => members.includes(u.user_id));
+  let founderUser = userInfos.find((u) => u.user_id === founder);
+  let leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
+  let membersUserInfos = userInfos.filter((u) => members.includes(u.user_id));
 
   const MemberRow = ({ name, badge }: { name: string; badge?: string }) => (
     <View style={styles.memberRow}>
@@ -89,6 +89,27 @@ export default function OwnGroupsView() {
       }
       return acc;
     }, {});
+
+  const makeMemberLeader = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("groups")
+      .update({
+        leaders: [...leaders, userId],
+      })
+      .eq("id", group.id);
+    
+    if (error) {
+      console.error("Error making member a leader:", error);
+    }
+    else {
+      // Update local state to reflect the change
+      const newLeader = userInfos.find((u) => u.user_id === userId);
+      if (newLeader) {
+        leadersUserInfos = [...leadersUserInfos, newLeader];
+        membersUserInfos = membersUserInfos.filter((m) => m.user_id !== userId);
+      }
+    }
+  };
 
   return (
     <>
