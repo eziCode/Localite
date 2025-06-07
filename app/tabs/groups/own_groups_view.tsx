@@ -188,21 +188,24 @@ export default function OwnGroupsView() {
             />
 
             {eventsByDate[selectedDate]?.length ? (
-                eventsByDate[selectedDate].map((event) => (
-                <View key={event.id} style={styles.eventCard}>
+              eventsByDate[selectedDate]
+                .slice()
+                .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+                .map((event) => (
+                  <View key={event.id} style={styles.eventCard}>
                     <Text style={styles.eventTitle}>{event.title}</Text>
                     <Text style={styles.eventTime}>
-                    {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    {" – "}
-                    {new Date(event.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {" – "}
+                      {new Date(event.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </Text>
                     {event.location_name && (
-                    <Text style={styles.eventLocation}>{event.location_name}</Text>
+                      <Text style={styles.eventLocation}>{event.location_name}</Text>
                     )}
-                </View>
+                  </View>
                 ))
             ) : (
-                <Text style={styles.placeholderText}>No events on this day.</Text>
+              <Text style={styles.placeholderText}>No events on this day.</Text>
             )}
             </View>
 

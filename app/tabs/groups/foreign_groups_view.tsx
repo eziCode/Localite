@@ -140,41 +140,46 @@ export default function ForeignGroupsView() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: "#fff" }} // fill and match background
+        contentContainerStyle={[styles.container, { minHeight: "100%" }]} // ensure content fills height
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.backButton}>← Back</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.banner}>
-        <Text style={styles.groupName}>{group.name}</Text>
-        {group.description && (
-          <Text style={styles.description}>{group.description}</Text>
-        )}
+        <View style={styles.banner}>
+          <Text style={styles.groupName}>{group.name}</Text>
+          {group.description && (
+            <Text style={styles.description}>{group.description}</Text>
+          )}
 
-        {group.vibes?.length ? (
-          <View style={styles.vibes}>
-            {group.vibes.map((vibe, i) => (
-              <Text key={i} style={styles.vibe}>#{vibe.toLowerCase()}</Text>
-            ))}
-          </View>
-        ) : null}
+          {group.vibes?.length ? (
+            <View style={styles.vibes}>
+              {group.vibes.map((vibe, i) => (
+                <Text key={i} style={styles.vibe}>#{vibe.toLowerCase()}</Text>
+              ))}
+            </View>
+          ) : null}
 
-        {group.visibility && (
-          <Text style={styles.metaBadge}>
-            {group.visibility === "open" && "🌐 Open to All"}
-            {group.visibility === "request" && "📝 Request to Join"}
-            {group.visibility === "hidden" && "🙈 Hidden"}
-          </Text>
-        )}
+          {group.visibility && (
+            <Text style={styles.metaBadge}>
+              {group.visibility === "open" && "🌐 Open to All"}
+              {group.visibility === "request" && "📝 Request to Join"}
+              {group.visibility === "hidden" && "🙈 Hidden"}
+            </Text>
+          )}
 
-        {group.invite_code && (
-          <Text style={styles.invite}>🔐 Invite Code: {group.invite_code}</Text>
-        )}
-      </View>
+          {group.invite_code && (
+            <Text style={styles.invite}>🔐 Invite Code: {group.invite_code}</Text>
+          )}
+        </View>
 
-      {founderUser && (
+        {founderUser && (
   <View style={styles.founderContainer}>
     <MemberRow name={founderUser.user_name} badge="Founder 👑" />
   </View>
@@ -292,6 +297,7 @@ export default function ForeignGroupsView() {
 
 
     </ScrollView>
+  </View>
   );
 }
 
