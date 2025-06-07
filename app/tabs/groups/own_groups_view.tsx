@@ -1,4 +1,5 @@
 import { PublicUser } from "@/types/public_user";
+import { format } from "date-fns";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
@@ -23,6 +25,9 @@ export default function OwnGroupsView() {
   const [userInfos, setUserInfos] = useState<PublicUser[]>([]);
   const [showPostEventModal, setShowPostEventModal] = useState(false);
   const [events, setEvents] = useState<UserEvent[]>([]);
+
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+
 
   const MoreArrow = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={styles.moreArrow}>
@@ -75,6 +80,15 @@ export default function OwnGroupsView() {
       {badge && <Text style={styles.badge}>{badge}</Text>}
     </View>
   );
+
+  const eventsByDate = events.reduce<Record<string, UserEvent[]>>((acc, event) => {
+      if (event && event.start_time) {
+        const date = format(new Date(event.start_time), "yyyy-MM-dd");
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(event);
+      }
+      return acc;
+    }, {});
 
   return (
     <>
@@ -154,12 +168,44 @@ export default function OwnGroupsView() {
             )}
 
 
-        <View style={styles.eventsContainer}>
-          <Text style={styles.sectionHeader}>Upcoming Events</Text>
-          <Text style={styles.placeholderText}>
-            🎉 Visual event timeline or calendar goes here...
-          </Text>
-        </View>
+            <View style={styles.eventsContainer}>
+            <Text style={styles.sectionHeader}>Upcoming Events</Text>
+            
+            <Calendar
+                onDayPress={(day) => setSelectedDate(day.dateString)}
+                markedDates={{
+                [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
+                ...Object.keys(eventsByDate).reduce((acc, date) => {
+                    acc[date] = { marked: true };
+                    return acc;
+                }, {} as Record<string, any>),
+                }}
+                theme={{
+                selectedDayBackgroundColor: "#7c3aed",
+                todayTextColor: "#7c3aed",
+                }}
+                style={{ borderRadius: 10, marginBottom: 16 }}
+            />
+
+            {eventsByDate[selectedDate]?.length ? (
+                eventsByDate[selectedDate].map((event) => (
+                <View key={event.id} style={styles.eventCard}>
+                    <Text style={styles.eventTitle}>{event.title}</Text>
+                    <Text style={styles.eventTime}>
+                    {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {" – "}
+                    {new Date(event.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
+                    {event.location_name && (
+                    <Text style={styles.eventLocation}>{event.location_name}</Text>
+                    )}
+                </View>
+                ))
+            ) : (
+                <Text style={styles.placeholderText}>No events on this day.</Text>
+            )}
+            </View>
+
       </ScrollView>
     </SafeAreaView>
 
@@ -259,25 +305,50 @@ const styles = StyleSheet.create({
   alignItems: "center",
   marginTop: 24,
   marginBottom: 10,
-},
-moreArrow: {
-  padding: 8,
-},
-safeArea: {
-  flex: 1,
-  backgroundColor: "#fafafa",
-},
-header: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingHorizontal: 20,
-  paddingBottom: 10,
-  backgroundColor: "#fafafa",
-},
-backButtonText: {
-  fontSize: 18,
-  color: "#7c3aed",
-},
-
+    },
+    moreArrow: {
+    padding: 8,
+    },
+    safeArea: {
+    flex: 1,
+    backgroundColor: "#fafafa",
+    },
+    header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: "#fafafa",
+    },
+    backButtonText: {
+    fontSize: 18,
+    color: "#7c3aed",
+    },
+    eventCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    },
+    eventTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1f2937",
+    },
+    eventTime: {
+    color: "#6b7280",
+    fontSize: 14,
+    marginTop: 2,
+    },
+    eventLocation: {
+    color: "#6b7280",
+    fontSize: 13,
+    marginTop: 2,
+    },
 });
