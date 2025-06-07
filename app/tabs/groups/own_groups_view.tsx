@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
+import { UserEvent } from "../../../types/user_event";
 import PostEventModal from "../../modals/post_event";
 
 export default function OwnGroupsView() {
@@ -21,6 +22,7 @@ export default function OwnGroupsView() {
   const user: import("@supabase/supabase-js").User = JSON.parse(userStr as string);
   const [userInfos, setUserInfos] = useState<PublicUser[]>([]);
   const [showPostEventModal, setShowPostEventModal] = useState(false);
+  const [events, setEvents] = useState<UserEvent[]>([]);
 
   const MoreArrow = ({ onPress }: { onPress: () => void }) => (
     <TouchableOpacity onPress={onPress} style={styles.moreArrow}>
@@ -48,8 +50,19 @@ export default function OwnGroupsView() {
       else setUserInfos(data);
     };
 
+    const fetchEvents = async () => {
+        const { data, error } = await supabase
+          .from("events")
+          .select("*")
+          .eq("group_id", group.id)
+        
+        if (error) console.error("Error fetching event data:", error);
+        else setEvents(data);
+    };
+
+    fetchEvents();
     fetchMemberData();
-  }, [founder, group.members, leaderToFetchCount, leaders, memberToFetchCount, members]);
+  }, [founder, group.id, group.members, leaderToFetchCount, leaders, memberToFetchCount, members]);
 
   const founderUser = userInfos.find((u) => u.user_id === founder);
   const leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
