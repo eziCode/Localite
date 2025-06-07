@@ -111,6 +111,26 @@ export default function OwnGroupsView() {
     }
   };
 
+  const demoteLeaderToMember = async (userId: string) => {
+    const { error } = await supabase
+      .from("groups")
+      .update({
+        leaders: leaders.filter((l) => l !== userId),
+        members: [...members, userId],
+      })
+      .eq("id", group.id);
+    if (error) {
+      console.error("Error demoting leader to member:", error);
+    } else {
+      // Update local state to reflect the change
+      const demotedLeader = userInfos.find((u) => u.user_id === userId);
+      if (demotedLeader) {
+        membersUserInfos = [...membersUserInfos, demotedLeader];
+        leadersUserInfos = leadersUserInfos.filter((l) => l.user_id !== userId);
+      }
+    }
+  };
+
   return (
     <>
     <SafeAreaView style={styles.container}>
