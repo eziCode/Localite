@@ -2,8 +2,10 @@ import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ScrollView, // <-- add this import
   StyleSheet,
   Switch,
   Text,
@@ -163,8 +165,12 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // <-- add this line
       >
-        <View style={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.header}>Post New Event</Text>
 
           <TextInput
@@ -214,6 +220,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
           <TouchableOpacity
             onPress={() => {
+              Keyboard.dismiss(); // <-- dismiss keyboard
               setShowStartPicker(true);
               setErrors([]);
             }}
@@ -237,6 +244,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
           <TouchableOpacity
             onPress={() => {
+              Keyboard.dismiss(); // <-- dismiss keyboard
               setShowEndPicker(true);
               setErrors([]);
             }}
@@ -300,6 +308,9 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             multiline
             numberOfLines={4}
             style={[styles.input, styles.descriptionInput]}
+            blurOnSubmit={true} // <-- add this
+            returnKeyType="done" // <-- add this
+            onSubmitEditing={() => Keyboard.dismiss()} // <-- add this
           />
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
@@ -309,7 +320,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
               <Text style={styles.postText}>Post</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
