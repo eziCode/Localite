@@ -5,15 +5,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View
 } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "../../lib/supabase";
+import type { Group } from "../../types/group";
+
 
 type PostEventModalProps = {
   onClose: () => void;
+  user: import("@supabase/supabase-js").User;
+  current_group: Group | null
 };
 
 type Prediction = {
@@ -21,16 +28,20 @@ type Prediction = {
   text: string;
 };
 
-const PostEventModal = ({ onClose }: PostEventModalProps) => {
+const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) => {
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [vibes, setVibes] = useState("");
-  const [type, setType] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
 
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [postOnlyToGroup, setPostOnlyToGroup] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -47,7 +58,6 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
       });
     })();
   }, []);
-
 
   const fetchAutocompletePredictions = async (input: string) => {
     if (input.length < 2) return setPredictions([]);
@@ -99,22 +109,54 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
   };
 
   const handlePost = () => {
-    const missing = [];
-    if (!title.trim()) missing.push("title");
-    if (!location.trim()) missing.push("location");
-    if (!vibes.trim()) missing.push("vibes");
-    if (!type.trim()) missing.push("type");
+    const newErrors: string[] = [];
 
-    if (missing.length > 0) {
-      setErrors(missing);
+    if (!title.trim()) newErrors.push("title");
+    if (!location.trim()) newErrors.push("location");
+    if (!startTime) newErrors.push("startTime");
+    if (!endTime) newErrors.push("endTime");
+    if (startTime && endTime && endTime <= startTime) {
+      newErrors.push("startTimeInvalid");
+      newErrors.push("endTimeInvalid");
+    }
+
+    if (newErrors.length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    // Handle post logic here
+    setErrors([]);
+
+    const pushEvent = async () => {
+      const { error } = await supabase
+        .from("events")
+        .insert({
+          title,
+          description,
+          location_name: location,
+          start_time: startTime,
+          end_time: endTime,
+          organizer_id: user.id,
+          group_id: current_group?.id || null,
+          post_only_to_group: postOnlyToGroup
+        });
+
+      if (error) {
+        console.error("Error posting event:", error);
+        return;
+      }
+    };
+
+    pushEvent();
     onClose();
   };
 
-  const hasError = (field: string) => errors.includes(field);
+  const hasError = (field: string) =>
+    errors.includes(field) ||
+    (field === "startTime" && errors.includes("startTimeInvalid")) ||
+    (field === "endTime" && errors.includes("endTimeInvalid"));
+
+  const showPostOnlyToggle = current_group?.visibility === "hidden" || current_group?.visibility === "request";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -124,12 +166,6 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
       >
         <View style={styles.scroll}>
           <Text style={styles.header}>Post New Event</Text>
-
-          {errors.length > 0 && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>Please fill out all required fields.</Text>
-            </View>
-          )}
 
           <TextInput
             placeholder="Event Title"
@@ -141,6 +177,7 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
             }}
             style={[styles.input, hasError("title") && styles.inputError]}
           />
+          {hasError("title") && <Text style={styles.fieldErrorText}>Title is required.</Text>}
 
           <TextInput
             placeholder="Location"
@@ -153,6 +190,7 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
             }}
             style={[styles.input, hasError("location") && styles.inputError]}
           />
+          {hasError("location") && <Text style={styles.fieldErrorText}>Location is required.</Text>}
 
           {predictions.length > 0 && (
             <FlatList
@@ -174,27 +212,85 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
             />
           )}
 
-          <TextInput
-            placeholder="Vibes (e.g., fun, chill, energetic)"
-            placeholderTextColor="#6b7280"
-            value={vibes}
-            onChangeText={(text) => {
-              setVibes(text);
+          <TouchableOpacity
+            onPress={() => {
+              setShowStartPicker(true);
               setErrors([]);
             }}
-            style={[styles.input, hasError("vibes") && styles.inputError]}
+            style={styles.input}
+          >
+            <Text style={{ color: startTime ? "#111827" : "#6b7280" }}>
+              {startTime
+                ? startTime.toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                : "Select Start Time"}
+            </Text>
+          </TouchableOpacity>
+          {hasError("startTime") && <Text style={styles.fieldErrorText}>Start time is required.</Text>}
+          {errors.includes("startTimeInvalid") && <Text style={styles.fieldErrorText}>Start time must be before end time.</Text>}
+
+          <TouchableOpacity
+            onPress={() => {
+              setShowEndPicker(true);
+              setErrors([]);
+            }}
+            style={styles.input}
+          >
+            <Text style={{ color: endTime ? "#111827" : "#6b7280" }}>
+              {endTime
+                ? endTime.toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                : "Select End Time"}
+            </Text>
+          </TouchableOpacity>
+          {hasError("endTime") && <Text style={styles.fieldErrorText}>End time is required.</Text>}
+          {errors.includes("endTimeInvalid") && <Text style={styles.fieldErrorText}>End time must be after start time.</Text>}
+
+          <DateTimePickerModal
+            isVisible={showStartPicker}
+            mode="datetime"
+            onConfirm={(date) => {
+              setStartTime(date);
+              setErrors([]);
+              setShowStartPicker(false);
+            }}
+            onCancel={() => setShowStartPicker(false)}
+            {...(Platform.OS === "ios" ? { minuteInterval: 5 } : {})}
           />
 
-          <TextInput
-            placeholder="Type (e.g., Study Jam, Game Night)"
-            placeholderTextColor="#6b7280"
-            value={type}
-            onChangeText={(text) => {
-              setType(text);
+          <DateTimePickerModal
+            isVisible={showEndPicker}
+            mode="datetime"
+            minimumDate={startTime || undefined}
+            onConfirm={(date) => {
+              setEndTime(date);
               setErrors([]);
+              setShowEndPicker(false);
             }}
-            style={[styles.input, hasError("type") && styles.inputError]}
+            onCancel={() => setShowEndPicker(false)}
+            {...(Platform.OS === "ios" ? { minuteInterval: 5 } : {})}
           />
+          {showPostOnlyToggle && (
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <Switch
+                value={postOnlyToGroup}
+                onValueChange={setPostOnlyToGroup}
+              />
+              <Text style={{ marginLeft: 8 }}>Post only to group members</Text>
+            </View>
+          )}
 
           <TextInput
             placeholder="Description (optional)"
@@ -205,7 +301,6 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
             numberOfLines={4}
             style={[styles.input, styles.descriptionInput]}
           />
-
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
@@ -219,7 +314,6 @@ const PostEventModal = ({ onClose }: PostEventModalProps) => {
     </SafeAreaView>
   );
 };
-
 
 export default PostEventModal;
 
@@ -247,6 +341,13 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: "#f87171",
     backgroundColor: "#fef2f2",
+  },
+  fieldErrorText: {
+    color: "#b91c1c",
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 12,
+    paddingLeft: 4,
   },
   suggestionBox: {
     backgroundColor: "#fff",

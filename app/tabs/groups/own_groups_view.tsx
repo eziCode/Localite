@@ -18,7 +18,7 @@ export default function OwnGroupsView() {
   const router = useRouter();
   const { group: groupStr, user: userStr } = useLocalSearchParams();
   const group = JSON.parse(groupStr as string) as Group;
-  const user = JSON.parse(userStr as string);
+  const user: import("@supabase/supabase-js").User = JSON.parse(userStr as string);
   const [userInfos, setUserInfos] = useState<PublicUser[]>([]);
   const [showPostEventModal, setShowPostEventModal] = useState(false);
 
@@ -158,6 +158,8 @@ export default function OwnGroupsView() {
       >
         <PostEventModal
           onClose={() => setShowPostEventModal(false)}
+          user={user}
+          current_group={group}
         />
       </Modal>
 
