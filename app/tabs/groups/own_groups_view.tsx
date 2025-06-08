@@ -28,13 +28,6 @@ export default function OwnGroupsView() {
 
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
-
-  const MoreArrow = ({ onPress }: { onPress: () => void }) => (
-    <TouchableOpacity onPress={onPress} style={styles.moreArrow}>
-        <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
-    </TouchableOpacity>
-    );
-
   const founder = group.founder;
   const leaders = React.useMemo(() => group.leaders ?? [], [group.leaders]);
   const members = group.members.filter((m) => m !== founder && !leaders.includes(m));
@@ -154,19 +147,9 @@ export default function OwnGroupsView() {
                 <View style={styles.sectionWithArrow}>
                 <Text style={styles.sectionHeader}>Leaders</Text>
                 {leadersCount > 5 && (
-                    <MoreArrow
-                    onPress={() =>
-                        router.push({
-                        pathname: "/tabs/groups/group_people_list",
-                        params: {
-                            group: JSON.stringify(group),
-                            user: JSON.stringify(user),
-                            people: JSON.stringify(leaders),
-                            role: "Leaders",
-                        },
-                        })
-                    }
-                    />
+                  <TouchableOpacity onPress={() => router.back()} style={styles.moreArrow}>
+                    <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+                  </TouchableOpacity>
                 )}
                 </View>
                 {leadersUserInfos.slice(0, 5).map((leader) => (
@@ -180,19 +163,9 @@ export default function OwnGroupsView() {
                 <View style={styles.sectionWithArrow}>
                 <Text style={styles.sectionHeader}>Members</Text>
                 {membersCount > 5 && (
-                    <MoreArrow
-                    onPress={() =>
-                        router.push({
-                        pathname: "/tabs/groups/group_people_list",
-                        params: {
-                            group: JSON.stringify(group),
-                            user: JSON.stringify(user),
-                            people: JSON.stringify(members),
-                            role: "Members",
-                        },
-                        })
-                    }
-                    />
+                  <TouchableOpacity onPress={() => {router.push({pathname: "/tabs/groups/group_people_list"})}} style={styles.moreArrow}>
+                    <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+                  </TouchableOpacity>
                 )}
                 </View>
                 {membersUserInfos.slice(0, 5).map((member) => (
