@@ -138,6 +138,21 @@ export default function OwnGroupsView() {
     Vibration.vibrate(50); // slight buzz
   };
 
+  const leaveGroup = async (userId: string) => {
+    if (userId === founder) {
+      
+    };
+    const { error } = await supabase.rpc(
+      "leave_group", 
+      { user_id: userId, group_id: group.id }
+    );
+    if (error) {
+      console.error("Error leaving group:", error);
+    } else {
+      router.back();
+    }
+  };
+
 const handleActionConfirm = async () => {
   if (!selectedUser || !actionType) return;
   if (actionType === "promote") {
