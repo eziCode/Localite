@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  Vibration,
   View
 } from "react-native";
 import { Calendar } from "react-native-calendars";
@@ -20,11 +21,15 @@ import PostEventModal from "../../modals/post_event";
 export default function OwnGroupsView() {
   const router = useRouter();
   const { group: groupStr, user: userStr } = useLocalSearchParams();
-  const group = JSON.parse(groupStr as string) as Group;
+  const [group, setGroup] = useState<Group>(JSON.parse(groupStr as string));
   const user: import("@supabase/supabase-js").User = JSON.parse(userStr as string);
   const [userInfos, setUserInfos] = useState<PublicUser[]>([]);
   const [showPostEventModal, setShowPostEventModal] = useState(false);
   const [events, setEvents] = useState<UserEvent[]>([]);
+
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<PublicUser | null>(null);
+  const [actionType, setActionType] = useState<"promote" | "demote" | null>(null);
 
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
@@ -90,13 +95,16 @@ export default function OwnGroupsView() {
       // Update local state to reflect the change
       const newLeader = userInfos.find((u) => u.user_id === userId);
       if (newLeader) {
-        leadersUserInfos = [...leadersUserInfos, newLeader];
-        membersUserInfos = membersUserInfos.filter((m) => m.user_id !== userId);
+        setGroup((prev) => ({
+          ...prev,
+          leaders: [...(prev.leaders ?? []), userId],
+        }));
       }
     }
   };
 
   const demoteLeaderToMember = async (userId: string) => {
+    const newLeaders = (group.leaders ?? []).filter((id) => id !== userId);
     const { error } = await supabase
       .from("groups")
       .update({
@@ -110,11 +118,33 @@ export default function OwnGroupsView() {
       // Update local state to reflect the change
       const demotedLeader = userInfos.find((u) => u.user_id === userId);
       if (demotedLeader) {
-        membersUserInfos = [...membersUserInfos, demotedLeader];
-        leadersUserInfos = leadersUserInfos.filter((l) => l.user_id !== userId);
+        setGroup((prev) => ({
+          ...prev,
+          leaders: newLeaders,
+        }));
       }
     }
   };
+
+  const openActionModal = (user: PublicUser, type: "promote" | "demote") => {
+    setSelectedUser(user);
+    setActionType(type);
+    setShowActionModal(true);
+    Vibration.vibrate(50); // slight buzz
+  };
+
+const handleActionConfirm = async () => {
+  if (!selectedUser || !actionType) return;
+  if (actionType === "promote") {
+    await makeMemberLeader(selectedUser.user_id);
+  } else if (actionType === "demote") {
+    await demoteLeaderToMember(selectedUser.user_id);
+  }
+  setShowActionModal(false);
+  setSelectedUser(null);
+  setActionType(null);
+};
+
 
   return (
     <>
@@ -154,7 +184,7 @@ export default function OwnGroupsView() {
               <TouchableOpacity
                 key={leader.id}
                 style={styles.memberRow}
-                onLongPress={}
+                onLongPress={() => openActionModal(leader, "demote")}
               >
                 <View style={styles.avatarCircle} />
                 <Text style={styles.memberName}>{leader.user_name}</Text>
@@ -177,7 +207,7 @@ export default function OwnGroupsView() {
               <TouchableOpacity
                 key={member.id}
                 style={styles.memberRow}
-                onLongPress={}
+                onLongPress={() => openActionModal(member, "promote")}
               >
                 <View style={styles.avatarCircle} />
                 <Text style={styles.memberName}>{member.user_name}</Text>
@@ -248,7 +278,51 @@ export default function OwnGroupsView() {
           current_group={group}
         />
       </Modal>
+    <Modal
+      visible={showActionModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowActionModal(false)}
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+      }}>
+        <View style={{
+          backgroundColor: "white",
+          padding: 24,
+          borderRadius: 10,
+          width: "80%",
+          alignItems: "center",
+        }}>
+          <Text style={{ fontSize: 16, marginBottom: 12, textAlign: "center" }}>
+            {actionType === "promote"
+              ? `Promote ${selectedUser?.user_name} to Leader?`
+              : `Demote ${selectedUser?.user_name} to Member?`}
+          </Text>
 
+          <View style={{ flexDirection: "row", marginTop: 16 }}>
+            <TouchableOpacity
+              style={{ padding: 10, marginRight: 20 }}
+              onPress={() => setShowActionModal(false)}
+            >
+              <Text style={{ color: "#6b7280" }}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ padding: 10 }}
+              onPress={handleActionConfirm}
+            >
+              <Text style={{ color: "#7c3aed", fontWeight: "bold" }}>
+                {actionType === "promote" ? "Promote" : "Demote"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
     </>
   );
 }
