@@ -52,12 +52,6 @@ export default function ForeignGroupsView() {
   const leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
   const membersUserInfos = userInfos.filter((u) => members.includes(u.user_id));
 
-  const MoreArrow = ({ onPress }: { onPress: () => void }) => (
-    <TouchableOpacity onPress={onPress} style={{ padding: 8 }}>
-      <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
-    </TouchableOpacity>
-  );
-
   const MemberRow = ({ name, badge }: { name: string; badge?: string }) => (
     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
       <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#d4d4d8", marginRight: 12 }} />
@@ -190,19 +184,9 @@ export default function ForeignGroupsView() {
     <View style={styles.sectionWithArrow}>
       <Text style={styles.sectionHeader}>Leaders</Text>
       {leadersCount > 5 && (
-        <MoreArrow
-          onPress={() =>
-            router.push({
-              pathname: "/tabs/groups/group_people_list",
-              params: {
-                group: JSON.stringify(group),
-                user: JSON.stringify(user),
-                people: JSON.stringify(leaders),
-                role: "Leaders",
-              },
-            })
-          }
-        />
+        <TouchableOpacity onPress={() => {router.push("/tabs/groups/group_people_list")}} style={{ padding: 8 }}>
+          <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+        </TouchableOpacity>
       )}
     </View>
     {leadersUserInfos.slice(0, 5).map((leader) => (
@@ -216,19 +200,9 @@ export default function ForeignGroupsView() {
     <View style={styles.sectionWithArrow}>
       <Text style={styles.sectionHeader}>Members</Text>
       {membersCount > 5 && (
-        <MoreArrow
-          onPress={() =>
-            router.push({
-              pathname: "/tabs/groups/group_people_list",
-              params: {
-                group: JSON.stringify(group),
-                user: JSON.stringify(user),
-                people: JSON.stringify(members),
-                role: "Members",
-              },
-            })
-          }
-        />
+        <TouchableOpacity onPress={() => {router.push("/tabs/groups/group_people_list")}} style={{ padding: 8 }}>
+          <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+        </TouchableOpacity>
       )}
     </View>
     {membersUserInfos.slice(0, 5).map((member) => (
