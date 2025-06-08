@@ -97,33 +97,9 @@ export default function GroupsPage() {
     const request = ownJoinRequests.find((r) => r.id === id);
     if (!request) return;
 
-    const { group_id, from_id, status } = request;
+    const { status } = request;
 
     if (status === "accepted") {
-      // Add user to the group's members list
-      const { data: groupData, error: fetchError } = await supabase
-        .from("groups")
-        .select("members")
-        .eq("id", group_id)
-        .single();
-
-      if (fetchError) {
-        console.error("Error fetching group:", fetchError);
-        return;
-      }
-
-      const updatedMembers = Array.from(new Set([...(groupData?.members ?? []), from_id]));
-
-      const { error: updateError } = await supabase
-        .from("groups")
-        .update({ members: updatedMembers })
-        .eq("id", group_id);
-
-      if (updateError) {
-        console.error("Error updating group members:", updateError);
-        return;
-      }
-
       // Delete the accepted join request
       const { error: deleteError } = await supabase
         .from("group_join_requests")
@@ -263,6 +239,7 @@ export default function GroupsPage() {
                         groupId: groupId.toString(),
                         groupName: requests[0].group.name,
                         requests: JSON.stringify(requests),
+                        user: JSON.stringify(user),
                       },
                     })
                   }
