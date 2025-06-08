@@ -90,39 +90,25 @@ const GroupJoinRequests = () => {
 
   const updateSupabaseRequestStatus = async (requestId: string, status: string) => {
     if (!requestId) return;
-      const { error } = await supabase
-        .from("group_join_requests")
-        .update({ status })
-        .eq("id", requestId);
-      
-        if (status === "accepted") {
-          // Add user to the group's members list
-        const { data: groupData, error: fetchError } = await supabase
-          .from("groups")
-          .select("members")
-          .eq("id", groupId)
-          .single();
-
-        if (fetchError) {
-          console.error("Error fetching group:", fetchError);
-          return;
-        }
-
-        const updatedMembers = Array.from(new Set([...(groupData?.members ?? []), current.from_id]));
-
-        const { error: updateError } = await supabase
-          .from("groups")
-          .update({ members: updatedMembers })
-          .eq("id", groupId);
-
-        if (updateError) {
-          console.error("Error updating group members:", updateError);
-          return;
-        }
-      };
+    const { error } = await supabase
+      .from("group_join_requests")
+      .update({ status })
+      .eq("id", requestId);
 
     if (error) {
       console.error("Error updating request status:", error);
+      return;
+    }
+
+    if (status === "accepted" && current?.from_id) {
+      // Use Postgres array_append to add user to members array
+      const { error: updateError } = await supabase.rpc(
+        "append_member_to_group_id_is_int",
+        { group_id_input: groupId, user_id_input: current.from_id }
+      );
+      if (updateError) {
+        console.error("Error appending member:", updateError);
+      }
     }
   };
 
