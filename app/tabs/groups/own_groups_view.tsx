@@ -36,8 +36,8 @@ export default function OwnGroupsView() {
   const founder = group.founder;
   const leaders = React.useMemo(() => group.leaders ?? [], [group.leaders]);
   const members = group.members.filter((m) => m !== founder && !leaders.includes(m));
-  const leadersCount = leaders.length;
-  const membersCount = members.length;
+  const [leadersCount, setLeaderCount] = useState<number>(leaders.length);
+  const [membersCount, setMemberCount] = useState<number>(members.length);
   const leaderToFetchCount = leadersCount && leadersCount > 5 ? 5 : leadersCount;
   const memberToFetchCount = membersCount > 5 ? 5 : membersCount;
 
@@ -81,7 +81,7 @@ export default function OwnGroupsView() {
     }, {});
 
   const makeMemberLeader = async (userId: string) => {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("groups")
       .update({
         leaders: [...leaders, userId],
@@ -99,30 +99,35 @@ export default function OwnGroupsView() {
           ...prev,
           leaders: [...(prev.leaders ?? []), userId],
         }));
+        const currentLeaderCount = leadersCount
+        const currentMemberCount = membersCount
+        setLeaderCount(currentLeaderCount + 1);
+        setMemberCount(currentMemberCount - 1);
       }
     }
   };
 
   const demoteLeaderToMember = async (userId: string) => {
     const newLeaders = (group.leaders ?? []).filter((id) => id !== userId);
+    // Ensure founder is always included in members array
+    const newMembers = Array.from(new Set([...group.members, userId, founder]));
     const { error } = await supabase
       .from("groups")
       .update({
-        leaders: leaders.filter((l) => l !== userId),
-        members: [...members, userId],
+        leaders: newLeaders,
+        members: newMembers,
       })
       .eq("id", group.id);
     if (error) {
       console.error("Error demoting leader to member:", error);
     } else {
-      // Update local state to reflect the change
-      const demotedLeader = userInfos.find((u) => u.user_id === userId);
-      if (demotedLeader) {
-        setGroup((prev) => ({
-          ...prev,
-          leaders: newLeaders,
-        }));
-      }
+      setGroup((prev) => ({
+        ...prev,
+        leaders: newLeaders,
+        members: newMembers,
+      }));
+      setLeaderCount(leadersCount - 1);
+      setMemberCount(membersCount + 1);
     }
   };
 
@@ -145,6 +150,8 @@ const handleActionConfirm = async () => {
   setActionType(null);
 };
 
+// Helper to check if current user is founder or leader
+const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 
   return (
     <>
@@ -184,7 +191,11 @@ const handleActionConfirm = async () => {
               <TouchableOpacity
                 key={leader.id}
                 style={styles.memberRow}
-                onLongPress={() => openActionModal(leader, "demote")}
+                onLongPress={
+                  canPromoteDemote && leader.user_id !== user.id // Prevent self-demote
+                    ? () => openActionModal(leader, "demote")
+                    : undefined
+                }
               >
                 <View style={styles.avatarCircle} />
                 <Text style={styles.memberName}>{leader.user_name}</Text>
@@ -207,7 +218,11 @@ const handleActionConfirm = async () => {
               <TouchableOpacity
                 key={member.id}
                 style={styles.memberRow}
-                onLongPress={() => openActionModal(member, "promote")}
+                onLongPress={
+                  canPromoteDemote
+                    ? () => openActionModal(member, "promote")
+                    : undefined
+                }
               >
                 <View style={styles.avatarCircle} />
                 <Text style={styles.memberName}>{member.user_name}</Text>
@@ -284,38 +299,35 @@ const handleActionConfirm = async () => {
       animationType="fade"
       onRequestClose={() => setShowActionModal(false)}
     >
-      <View style={{
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        justifyContent: "center",
-        alignItems: "center",
-      }}>
-        <View style={{
-          backgroundColor: "white",
-          padding: 24,
-          borderRadius: 10,
-          width: "80%",
-          alignItems: "center",
-        }}>
-          <Text style={{ fontSize: 16, marginBottom: 12, textAlign: "center" }}>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>
             {actionType === "promote"
               ? `Promote ${selectedUser?.user_name} to Leader?`
               : `Demote ${selectedUser?.user_name} to Member?`}
           </Text>
+          <Text style={styles.modalSubtext}>
+            This change will take effect immediately.
+          </Text>
 
-          <View style={{ flexDirection: "row", marginTop: 16 }}>
+          <View style={styles.modalButtons}>
             <TouchableOpacity
-              style={{ padding: 10, marginRight: 20 }}
+              style={styles.cancelButton}
               onPress={() => setShowActionModal(false)}
             >
-              <Text style={{ color: "#6b7280" }}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={{ padding: 10 }}
+              style={[
+                styles.confirmButton,
+                actionType === "promote"
+                  ? styles.promoteColor
+                  : styles.demoteColor,
+              ]}
               onPress={handleActionConfirm}
             >
-              <Text style={{ color: "#7c3aed", fontWeight: "bold" }}>
+              <Text style={styles.confirmButtonText}>
                 {actionType === "promote" ? "Promote" : "Demote"}
               </Text>
             </TouchableOpacity>
@@ -323,6 +335,7 @@ const handleActionConfirm = async () => {
         </View>
       </View>
     </Modal>
+
     </>
   );
 }
@@ -452,4 +465,78 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
     },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalContainer: {
+    width: "85%",
+    backgroundColor: "#fff",
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+    alignItems: "center",
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    textAlign: "center",
+  },
+
+  modalSubtext: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginTop: 6,
+    marginBottom: 24,
+    textAlign: "center",
+  },
+
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 10,
+    marginRight: 10,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+
+  cancelButtonText: {
+    color: "#374151",
+    fontWeight: "500",
+  },
+
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+
+  promoteColor: {
+    backgroundColor: "#7c3aed",
+  },
+
+  demoteColor: {
+    backgroundColor: "#f43f5e",
+  },
+
+  confirmButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
 });
