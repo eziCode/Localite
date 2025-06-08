@@ -66,14 +66,6 @@ export default function OwnGroupsView() {
   let leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
   let membersUserInfos = userInfos.filter((u) => members.includes(u.user_id));
 
-  const MemberRow = ({ name, badge }: { name: string; badge?: string }) => (
-    <View style={styles.memberRow}>
-      <View style={styles.avatarCircle} />
-      <Text style={styles.memberName}>{name}</Text>
-      {badge && <Text style={styles.badge}>{badge}</Text>}
-    </View>
-  );
-
   const eventsByDate = events.reduce<Record<string, UserEvent[]>>((acc, event) => {
       if (event && event.start_time) {
         const date = format(new Date(event.start_time), "yyyy-MM-dd");
@@ -135,93 +127,111 @@ export default function OwnGroupsView() {
 
       <Text style={styles.groupTitle}>{group.name}</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
         {founder && founderUser && (
           <View style={styles.founderContainer}>
-            <MemberRow name={founderUser.user_name} badge="Founder 👑" />
+            <TouchableOpacity
+              style={styles.memberRow}
+            >
+              <View style={styles.avatarCircle} />
+              <Text style={styles.memberName}>{founderUser.user_name}</Text>
+              <Text style={styles.badge}>Founder 👑</Text>
+            </TouchableOpacity>
           </View>
         )}
 
         {leadersCount > 0 && (
-            <>
-                <View style={styles.sectionWithArrow}>
-                <Text style={styles.sectionHeader}>Leaders</Text>
-                {leadersCount > 5 && (
-                  <TouchableOpacity onPress={() => router.back()} style={styles.moreArrow}>
-                    <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
-                  </TouchableOpacity>
-                )}
-                </View>
-                {leadersUserInfos.slice(0, 5).map((leader) => (
-                <MemberRow key={leader.id} name={leader.user_name} />
-                ))}
-            </>
-            )}
-
-            {membersCount > 0 && (
-            <>
-                <View style={styles.sectionWithArrow}>
-                <Text style={styles.sectionHeader}>Members</Text>
-                {membersCount > 5 && (
-                  <TouchableOpacity onPress={() => {router.push({pathname: "/tabs/groups/group_people_list"})}} style={styles.moreArrow}>
-                    <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
-                  </TouchableOpacity>
-                )}
-                </View>
-                {membersUserInfos.slice(0, 5).map((member) => (
-                <MemberRow key={member.id} name={member.user_name} />
-                ))}
-            </>
-            )}
-
-
-            {(user.id === founder || leaders.includes(user.id)) && (
-            <TouchableOpacity onPress={() => setShowPostEventModal(true)} style={styles.postButton}>
-                <Text style={styles.postButtonText}>+ Post Event</Text>
-            </TouchableOpacity>
-            )}
-
-
-            <View style={styles.eventsContainer}>
-            <Text style={styles.sectionHeader}>Upcoming Events</Text>
-            
-            <Calendar
-                onDayPress={(day) => setSelectedDate(day.dateString)}
-                markedDates={{
-                [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
-                ...Object.keys(eventsByDate).reduce((acc, date) => {
-                    acc[date] = { marked: true };
-                    return acc;
-                }, {} as Record<string, any>),
-                }}
-                theme={{
-                selectedDayBackgroundColor: "#7c3aed",
-                todayTextColor: "#7c3aed",
-                }}
-                style={{ borderRadius: 10, marginBottom: 16 }}
-            />
-
-            {eventsByDate[selectedDate]?.length ? (
-              eventsByDate[selectedDate]
-                .slice()
-                .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-                .map((event) => (
-                  <View key={event.id} style={styles.eventCard}>
-                    <Text style={styles.eventTitle}>{event.title}</Text>
-                    <Text style={styles.eventTime}>
-                      {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      {" – "}
-                      {new Date(event.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </Text>
-                    {event.location_name && (
-                      <Text style={styles.eventLocation}>{event.location_name}</Text>
-                    )}
-                  </View>
-                ))
-            ) : (
-              <Text style={styles.placeholderText}>No events on this day.</Text>
-            )}
+          <>
+            <View style={styles.sectionWithArrow}>
+              <Text style={styles.sectionHeader}>Leaders</Text>
+              {leadersCount > 5 && (
+                <TouchableOpacity onPress={() => router.back()} style={styles.moreArrow}>
+                  <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+                </TouchableOpacity>
+              )}
             </View>
+            {leadersUserInfos.slice(0, 5).map((leader) => (
+              <TouchableOpacity
+                key={leader.id}
+                style={styles.memberRow}
+                onLongPress={}
+              >
+                <View style={styles.avatarCircle} />
+                <Text style={styles.memberName}>{leader.user_name}</Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        {membersCount > 0 && (
+          <>
+            <View style={styles.sectionWithArrow}>
+              <Text style={styles.sectionHeader}>Members</Text>
+              {membersCount > 5 && (
+                <TouchableOpacity onPress={() => {router.push({pathname: "/tabs/groups/group_people_list"})}} style={styles.moreArrow}>
+                  <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {membersUserInfos.slice(0, 5).map((member) => (
+              <TouchableOpacity
+                key={member.id}
+                style={styles.memberRow}
+                onLongPress={}
+              >
+                <View style={styles.avatarCircle} />
+                <Text style={styles.memberName}>{member.user_name}</Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        {(user.id === founder || leaders.includes(user.id)) && (
+          <TouchableOpacity onPress={() => setShowPostEventModal(true)} style={styles.postButton}>
+              <Text style={styles.postButtonText}>+ Post Event</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.eventsContainer}>
+          <Text style={styles.sectionHeader}>Upcoming Events</Text>
+          
+          <Calendar
+              onDayPress={(day) => setSelectedDate(day.dateString)}
+              markedDates={{
+              [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
+              ...Object.keys(eventsByDate).reduce((acc, date) => {
+                  acc[date] = { marked: true };
+                  return acc;
+              }, {} as Record<string, any>),
+              }}
+              theme={{
+              selectedDayBackgroundColor: "#7c3aed",
+              todayTextColor: "#7c3aed",
+              }}
+              style={{ borderRadius: 10, marginBottom: 16 }}
+          />
+
+          {eventsByDate[selectedDate]?.length ? (
+            eventsByDate[selectedDate]
+              .slice()
+              .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+              .map((event) => (
+                <View key={event.id} style={styles.eventCard}>
+                  <Text style={styles.eventTitle}>{event.title}</Text>
+                  <Text style={styles.eventTime}>
+                    {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {" – "}
+                    {new Date(event.end_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </Text>
+                  {event.location_name && (
+                    <Text style={styles.eventLocation}>{event.location_name}</Text>
+                  )}
+                </View>
+              ))
+          ) : (
+            <Text style={styles.placeholderText}>No events on this day.</Text>
+          )}
+        </View>
 
       </ScrollView>
     </SafeAreaView>
