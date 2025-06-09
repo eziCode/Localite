@@ -139,9 +139,6 @@ export default function OwnGroupsView() {
   };
 
   const leaveGroup = async (userId: string) => {
-    if (userId === founder) {
-      
-    };
     const { error } = await supabase.rpc(
       "leave_group", 
       { user_id: userId, group_id: group.id }
@@ -252,6 +249,15 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           </TouchableOpacity>
         )}
 
+        <TouchableOpacity
+          style={styles.leaveButton}
+          onPress={() => {
+            leaveGroup(user.id);
+          }}
+        >
+          <Text style={styles.leaveButtonText}>Leave Group</Text>
+        </TouchableOpacity>
+
         <View style={styles.eventsContainer}>
           <Text style={styles.sectionHeader}>Upcoming Events</Text>
           
@@ -350,7 +356,6 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
         </View>
       </View>
     </Modal>
-
     </>
   );
 }
@@ -415,6 +420,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  leaveButton: {
+    backgroundColor: "#fff0f0",
+    borderColor: "#f43f5e",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 32,
+    marginBottom: 16,
+  },
+  leaveButtonText: {
+    color: "#f43f5e",
+    fontWeight: "700",
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   eventsContainer: {
     marginTop: 40,
@@ -551,7 +572,53 @@ const styles = StyleSheet.create({
   },
 
   confirmButtonText: {
-    color: "#fff",
+    color: "white",
     fontWeight: "600",
   },
+
+founderModalContainer: {
+  width: "85%",
+  backgroundColor: "#fef9f5",
+  padding: 24,
+  borderRadius: 20,
+  borderLeftWidth: 4,
+  borderLeftColor: "#fbbf24",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.12,
+  shadowRadius: 8,
+  elevation: 5,
+  alignItems: "center",
+  maxHeight: 300,
+  justifyContent: "space-between",
+},
+
+
+founderEmoji: {
+  fontSize: 40,
+  marginBottom: 10,
+},
+
+founderOkButton: {
+  backgroundColor: "#fbbf24",
+  paddingVertical: 12,
+  paddingHorizontal: 24,
+  borderRadius: 10,
+  marginTop: 16,
+  alignSelf: "center",
+  minWidth: 100,
+},
+
+founderCloseButton: {
+  position: "absolute",
+  top: 12,
+  right: 12,
+  zIndex: 10,
+  padding: 4,
+},
+founderCloseText: {
+  fontSize: 20,
+  color: "#fbbf24",
+  fontWeight: "bold",
+},
 });

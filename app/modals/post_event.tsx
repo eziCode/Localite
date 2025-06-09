@@ -1,11 +1,10 @@
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import {
-  FlatList,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView, // <-- add this import
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -199,11 +198,10 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           {hasError("location") && <Text style={styles.fieldErrorText}>Location is required.</Text>}
 
           {predictions.length > 0 && (
-            <FlatList
-              data={predictions}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
+            <View style={styles.suggestionBox}>
+              {predictions.map((item) => (
                 <TouchableOpacity
+                  key={item.id}
                   onPress={() => {
                     setLocation(item.text);
                     setPredictions([]);
@@ -212,21 +210,26 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                 >
                   <Text style={styles.suggestionText}>{item.text}</Text>
                 </TouchableOpacity>
-              )}
-              style={styles.suggestionBox}
-              keyboardShouldPersistTaps="handled"
-            />
+              ))}
+            </View>
           )}
 
           <TouchableOpacity
             onPress={() => {
-              Keyboard.dismiss(); // <-- dismiss keyboard
+              Keyboard.dismiss();
               setShowStartPicker(true);
               setErrors([]);
             }}
             style={styles.input}
           >
-            <Text style={{ color: startTime ? "#111827" : "#6b7280" }}>
+            <Text
+              style={{
+                color: startTime ? "#111827" : "#6b7280",
+                fontSize: 16,
+                fontFamily: "System",
+                fontWeight: "normal",
+              }}
+            >
               {startTime
                 ? startTime.toLocaleString(undefined, {
                     year: "numeric",
@@ -250,7 +253,14 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             }}
             style={styles.input}
           >
-            <Text style={{ color: endTime ? "#111827" : "#6b7280" }}>
+            <Text
+              style={{
+                color: endTime ? "#111827" : "#6b7280",
+                fontSize: 16,
+                fontFamily: "System",
+                fontWeight: "normal",
+              }}
+            >
               {endTime
                 ? endTime.toLocaleString(undefined, {
                     year: "numeric",
@@ -296,7 +306,17 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                 value={postOnlyToGroup}
                 onValueChange={setPostOnlyToGroup}
               />
-              <Text style={{ marginLeft: 8 }}>Post only to group members</Text>
+              <Text
+                style={{
+                  marginLeft: 8,
+                  color: "#6b7280",
+                  fontSize: 16,
+                  fontFamily: "System",
+                  fontWeight: "normal",
+                }}
+              >
+                Post only to group members
+              </Text>
             </View>
           )}
 
