@@ -1,86 +1,61 @@
-import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import ImagePicker from 'react-native-image-crop-picker';
 
-const ExpoPhotoLibraryPicker = () => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+const PROFILE_SIZE = 160;
+
+export default function ProfileImageSelector() {
+  const [image, setImage] = useState<string | null>(null);
 
   const selectImage = async () => {
-    // Request permission to access media library
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
-
-    // Launch image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-      allowsMultipleSelection: false,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+    try {
+      const result = await ImagePicker.openPicker({
+        width: PROFILE_SIZE,
+        height: PROFILE_SIZE,
+        cropping: true,
+        cropperCircleOverlay: true,
+        compressImageQuality: 0.8,
+        mediaType: 'photo',
+      });
+      setImage(result.path);
+    } catch (e) {
+      console.log('User cancelled picker', e);
     }
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={selectImage}>
-        <Text style={styles.buttonText}>Select Single Photo</Text>
+      <TouchableOpacity onPress={selectImage} style={styles.imageWrapper}>
+        {image ? (
+          <Image source={{ uri: image }} style={styles.profileImage} />
+        ) : (
+          <Text style={styles.placeholderText}>Tap to select</Text>
+        )}
       </TouchableOpacity>
-      
-      {selectedImage && (
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: selectedImage }} style={styles.image} />
-          <Text style={styles.imageText}>Selected Image</Text>
-        </View>
-      )}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    flex: 1,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    minWidth: 200,
+  imageWrapper: {
+    width: PROFILE_SIZE,
+    height: PROFILE_SIZE,
+    borderRadius: PROFILE_SIZE / 2,
+    backgroundColor: '#eee',
+    justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
-  secondButton: {
-    backgroundColor: '#34C759',
+  profileImage: {
+    width: '100%',
+    height: '100%',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  imageContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  image: {
-    width: 250,
-    height: 250,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  imageText: {
-    fontSize: 16,
-    color: '#333',
+  placeholderText: {
+    color: '#666',
   },
 });
-
-export default ExpoPhotoLibraryPicker;
