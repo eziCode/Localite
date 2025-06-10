@@ -182,6 +182,15 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <View style={styles.founderContainer}>
             <TouchableOpacity
               style={styles.memberRow}
+              disabled={founderUser.user_id === user.id}
+              onPress={() => {
+                if (founderUser.user_id !== user.id) {
+                  router.push({
+                    pathname: "/tabs/groups/inspect_user",
+                    params: { userToInspectId: founderUser.user_id },
+                  });
+                }
+              }}
             >
               {founderUser.profile_picture_url ? (
                 <Image
@@ -211,6 +220,17 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               <TouchableOpacity
                 key={leader.id}
                 style={styles.memberRow}
+                disabled={leader.user_id === user.id}
+                onPress={() => {
+                  if (leader.user_id !== user.id) {
+                    router.push({
+                      pathname: "/tabs/groups/inspect_user",
+                      params: { 
+                        userIdToInspect: leader.user_id 
+                      },
+                    });
+                  }
+                }}
                 onLongPress={
                   canPromoteDemote && leader.user_id !== user.id
                     ? () => openActionModal(leader, "demote")
@@ -245,6 +265,15 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               <TouchableOpacity
                 key={member.id}
                 style={styles.memberRow}
+                disabled={member.user_id === user.id}
+                onPress={() => {
+                  if (member.user_id !== user.id) {
+                    router.push({
+                      pathname: "/tabs/groups/inspect_user",
+                      params: { userToInspectId: member.user_id },
+                    });
+                  }
+                }}
                 onLongPress={
                   canPromoteDemote
                     ? () => openActionModal(member, "promote")

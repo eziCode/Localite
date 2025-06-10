@@ -18,7 +18,7 @@ export default function InspectUser() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const userIdToInspect: string = JSON.parse(params.userToInspect as string);
+  const userIdToInspect: string = params.userToInspectId as string;
   const [user, setUser] = useState<PublicUser | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [profilePicture, setProfilePicture] = useState<React.ReactNode>(
