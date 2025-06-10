@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const ExpoPhotoLibraryPicker = () => {
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const selectImage = async () => {
     // Request permission to access media library
@@ -16,11 +16,11 @@ const ExpoPhotoLibraryPicker = () => {
 
     // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: 'images',
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
-      allowsMultipleSelection: false, // Set to true for multiple selection
+      allowsMultipleSelection: false,
     });
 
     if (!result.canceled) {
@@ -28,35 +28,10 @@ const ExpoPhotoLibraryPicker = () => {
     }
   };
 
-  const selectMultipleImages = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      // Handle multiple selected images
-      console.log('Selected images:', result.assets.length);
-      setSelectedImage(result.assets[0].uri); // Show first image for demo
-    }
-  };
-
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.button} onPress={selectImage}>
         <Text style={styles.buttonText}>Select Single Photo</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={[styles.button, styles.secondButton]} onPress={selectMultipleImages}>
-        <Text style={styles.buttonText}>Select Multiple Photos</Text>
       </TouchableOpacity>
       
       {selectedImage && (
