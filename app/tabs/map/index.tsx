@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../../lib/supabase";
 
 export default function Profile() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function Profile() {
       <View style={styles.container}>
         <Text style={styles.text}>Welcome to Maps</Text>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Log Out</Text>
+          <Text style={styles.logoutText}>Log In</Text>
         </TouchableOpacity>
       </View>
     </>
