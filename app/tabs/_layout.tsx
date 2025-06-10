@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
 export default function TabsLayout() {
@@ -6,13 +7,34 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarStyle: { height: 60 },
         tabBarLabelStyle: { fontSize: 14 },
+        tabBarShowLabel: false
       }}
     >
-      <Tabs.Screen name="map" options={{ title: "Map" }} />
-      <Tabs.Screen name="inbox" options={{ title: "Inbox" }} />
-      <Tabs.Screen name="groups" options={{ title: "Groups" }} />
-      <Tabs.Screen name="explore" options={{ title: "Explore" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+      <Tabs.Screen
+        name="map"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="compass-outline" color={color} size={size} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
