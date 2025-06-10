@@ -6,12 +6,12 @@ import { format } from 'date-fns';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -77,7 +77,7 @@ export default function UserProfile() {
   useEffect(() => {
     fetchEvents();
     fetchUserProfilePicture();
-  }, [fetchEvents]);
+  }, [fetchEvents, fetchUserProfilePicture]);
 
   useEffect(() => {
     fetchUserProfilePicture();
@@ -122,7 +122,7 @@ export default function UserProfile() {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
-                router.push("tabs/groups/show_all_user_groups")
+                router.push("/tabs/groups/show_all_user_groups")
               }}
             >
               <Text style={styles.groupSummary}>

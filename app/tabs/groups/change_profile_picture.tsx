@@ -1,10 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-const ShowAllUserGroups = () => {
+const ChangeProfilePicture = () => {
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>Welcome to Group View</Text>
+            <Text style={styles.text}>Welcome to Change Profile Picture View</Text>
         </View>
     );
 };
@@ -22,4 +22,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ShowAllUserGroups;
+export default ChangeProfilePicture;
