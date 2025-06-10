@@ -59,7 +59,7 @@ export default function UserProfile() {
     const { data, error } = await supabase
       .from('users')
       .select('profile_picture_url')
-      .eq('id', user?.id)
+      .eq('user_id', user?.id)
       .single();
 
     if (error || !data?.profile_picture_url) {
@@ -143,8 +143,6 @@ export default function UserProfile() {
 
     return data.publicUrl;
   };
-
-  
 
   useEffect(() => {
     fetchEvents();
