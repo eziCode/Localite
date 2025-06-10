@@ -22,6 +22,10 @@
     <string>1.0.0</string>
     <key>CFBundleSignature</key>
     <string>????</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs access to photo library to select images</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow access to camera for profile photo</string>
     <key>CFBundleURLTypes</key>
     <array>
       <dict>
@@ -51,6 +55,16 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to save photos</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your photos</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

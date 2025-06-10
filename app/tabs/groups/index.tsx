@@ -1,4 +1,5 @@
 import { JoinRequestWithGroup } from "@/types/join_request_with_group";
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -11,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
 import CreateGroupModal from "../../modals/create_group";
@@ -26,6 +27,7 @@ export default function GroupsPage() {
   const [ownJoinRequests, setOwnJoinRequests] = useState<JoinRequestWithGroup[]>([]);
   const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: number]: JoinRequestWithGroup[] }>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const fetchUserGroups = async (userId: string) => {
     const { data, error } = await supabase
@@ -181,6 +183,26 @@ export default function GroupsPage() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fafafa" }}>
+        {/* Profile Icon Button */}
+        <TouchableOpacity
+          style={[
+            styles.profileIconButton,
+            { top: insets.top + 8, right: insets.right + 12 }
+          ]}
+          onPress={() =>
+            router.push({
+              pathname: "/tabs/groups/profile",
+              params: {
+                user: JSON.stringify(user),
+                groups: JSON.stringify(userGroups),
+              },
+            })
+          }
+          activeOpacity={0.7}
+        >
+          <Ionicons name="person-circle-outline" size={32} color="#7c5e99" />
+        </TouchableOpacity>
+
         <ScrollView style={styles.container}>
           <Text style={styles.title}>Your Groups</Text>
           {userGroups.length === 0 ? (
@@ -360,5 +382,17 @@ dismissText: {
   fontWeight: "500",
   fontSize: 14,
 },
-
+profileIconButton: {
+  position: "absolute",
+  top: 18,
+  right: 18,
+  zIndex: 20,
+  backgroundColor: "#fff",
+  borderRadius: 20,
+  padding: 2,
+  shadowColor: "#000",
+  shadowOpacity: 0.06,
+  shadowRadius: 2,
+  elevation: 2,
+},
 });

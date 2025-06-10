@@ -2,7 +2,9 @@ import type { PublicUser } from "@/types/public_user";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Image,
   Modal,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -52,9 +54,24 @@ export default function ForeignGroupsView() {
   const leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
   const membersUserInfos = userInfos.filter((u) => members.includes(u.user_id));
 
-  const MemberRow = ({ name, badge }: { name: string; badge?: string }) => (
+  const MemberRow = ({
+    name,
+    badge,
+    profile_picture_url,
+  }: {
+    name: string;
+    badge?: string;
+    profile_picture_url?: string;
+  }) => (
     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
-      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#d4d4d8", marginRight: 12 }} />
+      {profile_picture_url ? (
+        <Image
+          source={{ uri: profile_picture_url }}
+          style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12, backgroundColor: "#d4d4d8" }}
+        />
+      ) : (
+        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#d4d4d8", marginRight: 12 }} />
+      )}
       <Text style={{ fontSize: 16, color: "#333", flex: 1 }}>{name}</Text>
       {badge && <Text style={{ fontSize: 12, color: "#f59e0b", fontWeight: "600", marginLeft: 8 }}>{badge}</Text>}
     </View>
@@ -134,48 +151,49 @@ export default function ForeignGroupsView() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: "#fff" }} // fill and match background
-        contentContainerStyle={[styles.container, { minHeight: "100%" }]} // ensure content fills height
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "#fff" }}
+          contentContainerStyle={[styles.container, { minHeight: "100%" }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.backButton}>← Back</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.banner}>
-          <Text style={styles.groupName}>{group.name}</Text>
-          {group.description && (
-            <Text style={styles.description}>{group.description}</Text>
-          )}
+          <View style={styles.banner}>
+            <Text style={styles.groupName}>{group.name}</Text>
+            {group.description && (
+              <Text style={styles.description}>{group.description}</Text>
+            )}
 
-          {group.vibes?.length ? (
-            <View style={styles.vibes}>
-              {group.vibes.map((vibe, i) => (
-                <Text key={i} style={styles.vibe}>#{vibe.toLowerCase()}</Text>
-              ))}
-            </View>
-          ) : null}
+            {group.vibes?.length ? (
+              <View style={styles.vibes}>
+                {group.vibes.map((vibe, i) => (
+                  <Text key={i} style={styles.vibe}>#{vibe.toLowerCase()}</Text>
+                ))}
+              </View>
+            ) : null}
 
-          {group.visibility && (
-            <Text style={styles.metaBadge}>
-              {group.visibility === "open" && "🌐 Open to All"}
-              {group.visibility === "request" && "📝 Request to Join"}
-              {group.visibility === "hidden" && "🙈 Hidden"}
-            </Text>
-          )}
+            {group.visibility && (
+              <Text style={styles.metaBadge}>
+                {group.visibility === "open" && "🌐 Open to All"}
+                {group.visibility === "request" && "📝 Request to Join"}
+                {group.visibility === "hidden" && "🙈 Hidden"}
+              </Text>
+            )}
 
-          {group.invite_code && (
-            <Text style={styles.invite}>🔐 Invite Code: {group.invite_code}</Text>
-          )}
-        </View>
+            {group.invite_code && (
+              <Text style={styles.invite}>🔐 Invite Code: {group.invite_code}</Text>
+            )}
+          </View>
 
-        {founderUser && (
+          {founderUser && (
   <View style={styles.founderContainer}>
-    <MemberRow name={founderUser.user_name} badge="Founder 👑" />
+    <MemberRow name={founderUser.user_name} badge="Founder 👑" profile_picture_url={founderUser.profile_picture_url} />
   </View>
 )}
 
@@ -190,7 +208,7 @@ export default function ForeignGroupsView() {
       )}
     </View>
     {leadersUserInfos.slice(0, 5).map((leader) => (
-      <MemberRow key={leader.id} name={leader.user_name} />
+      <MemberRow key={leader.id} name={leader.user_name} profile_picture_url={leader.profile_picture_url} />
     ))}
   </>
 )}
@@ -206,7 +224,7 @@ export default function ForeignGroupsView() {
       )}
     </View>
     {membersUserInfos.slice(0, 5).map((member) => (
-      <MemberRow key={member.id} name={member.user_name} />
+      <MemberRow key={member.id} name={member.user_name} profile_picture_url={member.profile_picture_url} />
     ))}
   </>
 )}
@@ -272,6 +290,7 @@ export default function ForeignGroupsView() {
 
     </ScrollView>
   </View>
+  </SafeAreaView>
   );
 }
 
@@ -486,5 +505,4 @@ founderContainer: {
   borderLeftColor: "#fbbf24",
   borderLeftWidth: 4,
 },
-
 });

@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -182,7 +183,14 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
             <TouchableOpacity
               style={styles.memberRow}
             >
-              <View style={styles.avatarCircle} />
+              {founderUser.profile_picture_url ? (
+                <Image
+                  source={{ uri: founderUser.profile_picture_url }}
+                  style={styles.avatarCircle}
+                />
+              ) : (
+                <View style={styles.avatarCircle} />
+              )}
               <Text style={styles.memberName}>{founderUser.user_name}</Text>
               <Text style={styles.badge}>Founder 👑</Text>
             </TouchableOpacity>
@@ -204,12 +212,19 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                 key={leader.id}
                 style={styles.memberRow}
                 onLongPress={
-                  canPromoteDemote && leader.user_id !== user.id // Prevent self-demote
+                  canPromoteDemote && leader.user_id !== user.id
                     ? () => openActionModal(leader, "demote")
                     : undefined
                 }
               >
-                <View style={styles.avatarCircle} />
+                {leader.profile_picture_url ? (
+                  <Image
+                    source={{ uri: leader.profile_picture_url }}
+                    style={styles.avatarCircle}
+                  />
+                ) : (
+                  <View style={styles.avatarCircle} />
+                )}
                 <Text style={styles.memberName}>{leader.user_name}</Text>
               </TouchableOpacity>
             ))}
@@ -236,7 +251,14 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                     : undefined
                 }
               >
-                <View style={styles.avatarCircle} />
+                {member.profile_picture_url ? (
+                  <Image
+                    source={{ uri: member.profile_picture_url }}
+                    style={styles.avatarCircle}
+                  />
+                ) : (
+                  <View style={styles.avatarCircle} />
+                )}
                 <Text style={styles.memberName}>{member.user_name}</Text>
               </TouchableOpacity>
             ))}

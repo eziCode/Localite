@@ -41,7 +41,7 @@ export default function Index() {
         router.replace(destination);
       });
     }
-  }, [ready, destination]);
+  }, [ready, destination, fadeAnim, router]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
