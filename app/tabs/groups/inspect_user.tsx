@@ -18,7 +18,7 @@ export default function InspectUser() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  const userToInspect: import("@supabase/supabase-js").User = JSON.parse(params.userToInspect as string);
+  const userIdToInspect: string = JSON.parse(params.userToInspect as string);
   const [user, setUser] = useState<PublicUser | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [profilePicture, setProfilePicture] = useState<React.ReactNode>(
@@ -29,22 +29,22 @@ export default function InspectUser() {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('user_id', userToInspect.id)
+      .eq('user_id', userIdToInspect)
       .single();
 
     if (error) console.error('Error fetching user:', error);
     else setUser(data as PublicUser);
-  }, [userToInspect]);
+  }, [userIdToInspect]);
 
   const fetchGroups = useCallback(async () => {
     const { data, error } = await supabase
       .from('groups')
       .select('*')
-      .filter("members", "cs", JSON.stringify([userToInspect.id]));
+      .filter("members", "cs", JSON.stringify([userIdToInspect]));
 
     if (error) console.error('Error fetching groups:', error);
     else setGroups(data as Group[]);
-  }, [userToInspect]);
+  }, [userIdToInspect]);
 
   const fetchProfilePicture = useCallback(async () => {
     const profilePictureURL = user?.profile_picture_url
@@ -69,8 +69,8 @@ export default function InspectUser() {
     fetchProfilePicture();
   }, [fetchUserInfo, fetchGroups, fetchProfilePicture]);
 
-  const joinDate = userToInspect?.created_at
-    ? new Date(userToInspect.created_at).toLocaleDateString(undefined, {
+  const joinDate = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -95,7 +95,7 @@ export default function InspectUser() {
           <View style={styles.profilePicContainer}>{profilePicture}</View>
           <View style={styles.profileInfo}>
             <Text style={styles.headerText}>
-              {userToInspect?.user_metadata.username || 'User'}
+              {user?.user_name || 'User'}
             </Text>
             {joinDate && (
               <Text style={styles.subtext}>Joined on {joinDate}</Text>
