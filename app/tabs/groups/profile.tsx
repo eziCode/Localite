@@ -2,7 +2,9 @@ import { supabase } from '@/lib/supabase';
 import { Group } from '@/types/group';
 import { UserEvent } from '@/types/user_event';
 import { Ionicons } from '@expo/vector-icons';
+import { decode } from 'base64-arraybuffer';
 import { format } from 'date-fns';
+import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -86,7 +88,6 @@ export default function UserProfile() {
         mediaType: 'photo',
       });
 
-      // Update state with cropped image
       const uri = result.path;
       setProfilePicture(
         <Image
@@ -96,16 +97,54 @@ export default function UserProfile() {
         />
       );
 
-      // (Optional) Upload to Supabase or update user profile
-      // await supabase
-      //   .from('users')
-      //   .update({ profile_picture_url: uri })
-      //   .eq('id', user?.id);
+      if (!user) {
+        console.error("No user found to update profile picture.");
+        return;
+      }
 
+      // Upload to Supabase Storage and get public URL
+      const publicUrl = await uploadToSupabase(uri, user.id);
+
+      // Update user's profile_picture_url in the users table
+      const { error } = await supabase
+        .from('users')
+        .update({ profile_picture_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Failed to update user profile picture URL:', error);
+      }
     } catch (e) {
       console.log('Image selection cancelled or failed:', e);
     }
   };
+
+  const uploadToSupabase = async (uri: string, userId: string) => {
+    const fileExt = uri.split('.').pop();
+    const fileName = `${userId}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    const { error } = await supabase.storage
+      .from('profile-pictures')
+      .upload(filePath, decode(base64), {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
+  
 
   useEffect(() => {
     fetchEvents();
