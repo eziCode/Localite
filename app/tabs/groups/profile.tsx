@@ -6,11 +6,12 @@ import { format } from 'date-fns';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+    Image,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +38,10 @@ export default function UserProfile() {
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
 
+  const [profilePicture, setProfilePicture] = useState<React.ReactNode>(
+    <Ionicons name="person-circle-outline" size={80} color="#d1d5db" />
+  );
+
   const fetchEvents = useCallback(async () => {
     const { data, error } = await supabase
       .from('events')
@@ -47,9 +52,36 @@ export default function UserProfile() {
     else setEvents(data || []);
   }, [groups]);
 
+  const fetchUserProfilePicture = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('profile_picture_url')
+      .eq('id', user?.id)
+      .single();
+
+    if (error || !data?.profile_picture_url) {
+      setProfilePicture(
+        <Ionicons name="person-circle-outline" size={80} color="#d1d5db" />
+      );
+    } else {
+      setProfilePicture(
+        <Image
+          source={{ uri: data.profile_picture_url }}
+          style={{ width: 80, height: 80, borderRadius: 40 }}
+          resizeMode="cover"
+        />
+      );
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     fetchEvents();
+    fetchUserProfilePicture();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    fetchUserProfilePicture();
+  }, [fetchUserProfilePicture]);
 
   const eventsByDate = events.reduce<Record<string, UserEvent[]>>((acc, event) => {
     if (event.start_time) {
@@ -73,9 +105,32 @@ export default function UserProfile() {
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerText}>Welcome, {userName}!</Text>
-        {joinDate && <Text style={styles.subtext}>Joined on {joinDate}</Text>}
-        <Text style={styles.groupSummary}>You&apos;re in {groups.length} group{groups.length !== 1 ? 's' : ''}.</Text>
+        {/* Profile Picture and Info Row */}
+        <View style={styles.profileRow}>
+          <TouchableOpacity
+            style={styles.profilePicContainer}
+            activeOpacity={0.7}
+            onPress={() => {
+              router.push("/tabs/groups/change_profile_picture")
+            }}
+          >
+            {profilePicture}
+          </TouchableOpacity>
+          <View style={styles.profileInfo}>
+            <Text style={styles.headerText}>Welcome, {userName}!</Text>
+            {joinDate && <Text style={styles.subtext}>Joined on {joinDate}</Text>}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => {
+                router.push("tabs/groups/show_all_user_groups")
+              }}
+            >
+              <Text style={styles.groupSummary}>
+                You&apos;re in {groups.length} group{groups.length !== 1 ? 's' : ''}.
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={styles.calendarContainer}>
           <Text style={styles.sectionTitle}>Your Group Events</Text>
@@ -159,5 +214,20 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     marginLeft: 2,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    marginTop: 4,
+  },
+  profilePicContainer: {
+    marginRight: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
   },
 });
