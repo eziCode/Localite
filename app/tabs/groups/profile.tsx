@@ -14,6 +14,7 @@ import {
   View
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import ImagePicker from 'react-native-image-crop-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function UserProfile() {
@@ -74,6 +75,38 @@ export default function UserProfile() {
     }
   }, [user?.id]);
 
+  const handleProfileImageChange = async () => {
+    try {
+      const result = await ImagePicker.openPicker({
+        width: 300,
+        height: 300,
+        cropping: true,
+        cropperCircleOverlay: true,
+        compressImageQuality: 0.8,
+        mediaType: 'photo',
+      });
+
+      // Update state with cropped image
+      const uri = result.path;
+      setProfilePicture(
+        <Image
+          source={{ uri }}
+          style={{ width: 80, height: 80, borderRadius: 40 }}
+          resizeMode="cover"
+        />
+      );
+
+      // (Optional) Upload to Supabase or update user profile
+      // await supabase
+      //   .from('users')
+      //   .update({ profile_picture_url: uri })
+      //   .eq('id', user?.id);
+
+    } catch (e) {
+      console.log('Image selection cancelled or failed:', e);
+    }
+  };
+
   useEffect(() => {
     fetchEvents();
     fetchUserProfilePicture();
@@ -110,9 +143,7 @@ export default function UserProfile() {
           <TouchableOpacity
             style={styles.profilePicContainer}
             activeOpacity={0.7}
-            onPress={() => {
-              router.push("/tabs/groups/change_profile_picture")
-            }}
+            onPress={handleProfileImageChange}
           >
             {profilePicture}
           </TouchableOpacity>
