@@ -1,5 +1,6 @@
 import { PublicUser } from "@/types/public_user";
 import { format } from "date-fns";
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -168,7 +169,7 @@ export default function OwnGroupsView() {
   const pushJoinCodeToGroupTable = async (joinCode: string) => {
     const { error } = await supabase
       .from("groups")
-      .update({ join_code: joinCode })
+      .update({ join_code: joinCode, join_code_creation_time: new Date() })
       .eq("id", group.id);
 
     if (error) {
@@ -309,6 +310,37 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               </TouchableOpacity>
             ))}
           </>
+        )}
+
+        {(user.id === founder || leaders.includes(user.id)) && (
+          <View style={{ marginTop: 24, marginBottom: 24, backgroundColor: "#f3f0ff", borderRadius: 10, padding: 16 }}>
+            <Text style={{ fontWeight: "600", color: "#6b21a8", marginBottom: 8 }}>Group Join Code</Text>
+            {joinCode ? (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#e5e7eb" }}>
+                  <Text selectable style={{ fontSize: 16, letterSpacing: 1 }}>{joinCode}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => Clipboard.setStringAsync(joinCode)}
+                  style={{ marginLeft: 12, padding: 8, backgroundColor: "#7c3aed", borderRadius: 8 }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={async () => {
+                  // Generate a new join code (simple example: random 6 chars)
+                  const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                  setJoinCode(newCode);
+                  await pushJoinCodeToGroupTable(newCode);
+                }}
+                style={{ backgroundColor: "#7c3aed", borderRadius: 8, padding: 12, alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Generate Join Code</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {(user.id === founder || leaders.includes(user.id)) && (

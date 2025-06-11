@@ -27,6 +27,7 @@ export default function GroupsPage() {
   const [ownJoinRequests, setOwnJoinRequests] = useState<JoinRequestWithGroup[]>([]);
   const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: number]: JoinRequestWithGroup[] }>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [inviteCodeError, setInviteCodeError] = useState("");
   const insets = useSafeAreaInsets();
 
   const fetchUserGroups = async (userId: string) => {
@@ -168,8 +169,47 @@ export default function GroupsPage() {
     }, [])
   );
 
-  const handleJoinByCode = () => {
-    console.log("Joining group with code:", inviteCode);
+  const handleJoinByCode = async () => {
+    const trimmedCode = inviteCode.trim();
+    const { data, error } = await supabase
+      .from("groups")
+      .select("*")
+      .eq("join_code", trimmedCode)
+      .single();
+
+    if (error) {
+      console.error("Error fetching group by invite code:", error);
+      return;
+    }
+
+    if (!data) {
+      setInviteCodeError("No group found with that invite code.");
+      return;
+    }
+
+    let groupToJoin: Group = data as Group;
+
+    if (userGroups.some((group) => group.id === groupToJoin.id)) {
+      setInviteCodeError("You are already a member of this group.");
+      return;
+    }
+
+    const { error: updateError } = await supabase.rpc(
+      "append_member_to_group_id_is_int",
+      { group_id_input: groupToJoin?.id, user_id_input: user?.id }
+    );
+
+    if (updateError) {
+      console.error("Error joining group by invite code:", updateError);
+      return;
+    }
+
+    // Refresh groups after joining
+    if (user?.id) {
+      groupToJoin.members = [...(groupToJoin.members), user.id];
+    }
+    setUserGroups((prev) => [...prev, groupToJoin]);
+    setInviteCode("");
   };
 
   async function handleRefreshGroups(): Promise<void> {
@@ -242,7 +282,6 @@ export default function GroupsPage() {
                 >
                   <Text style={styles.groupName}>{item.name}</Text>
                   <Text style={styles.groupMeta}>{item.members?.length ?? 0} {item.members?.length === 1 ? "member" : "members"}</Text>
-                  {item.invite_code && <Text style={styles.nextEvent}>Invite Code: {item.invite_code}</Text>}
                 </TouchableOpacity>
               )}
             />
@@ -305,7 +344,7 @@ export default function GroupsPage() {
         )}
 
           <Text style={styles.title}>Join by Invite Code</Text>
-          <View style={styles.inviteRow}>
+          <View style={[styles.inviteRow, { marginBottom: 8 }]}>
             <TextInput
               placeholder="Enter invite code"
               value={inviteCode}
@@ -316,6 +355,9 @@ export default function GroupsPage() {
               <Text style={{ color: "white" }}>Join</Text>
             </TouchableOpacity>
           </View>
+          {inviteCodeError ? (
+  <Text style={{ color: "#dc2626", marginTop: 4, marginBottom: 0 }}>{inviteCodeError}</Text>
+) : null}
         </ScrollView>
       </SafeAreaView>
 
