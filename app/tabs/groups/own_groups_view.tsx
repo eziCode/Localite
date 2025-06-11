@@ -1,5 +1,6 @@
 import { PublicUser } from "@/types/public_user";
 import { format } from "date-fns";
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -27,6 +28,8 @@ export default function OwnGroupsView() {
   const [userInfos, setUserInfos] = useState<PublicUser[]>([]);
   const [showPostEventModal, setShowPostEventModal] = useState(false);
   const [events, setEvents] = useState<UserEvent[]>([]);
+
+  const [joinCode, setJoinCode] = useState<string>(group.join_code || "");
 
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PublicUser | null>(null);
@@ -151,17 +154,32 @@ export default function OwnGroupsView() {
     }
   };
 
-const handleActionConfirm = async () => {
-  if (!selectedUser || !actionType) return;
-  if (actionType === "promote") {
-    await makeMemberLeader(selectedUser.user_id);
-  } else if (actionType === "demote") {
-    await demoteLeaderToMember(selectedUser.user_id);
-  }
-  setShowActionModal(false);
-  setSelectedUser(null);
-  setActionType(null);
-};
+  const handleActionConfirm = async () => {
+    if (!selectedUser || !actionType) return;
+    if (actionType === "promote") {
+      await makeMemberLeader(selectedUser.user_id);
+    } else if (actionType === "demote") {
+      await demoteLeaderToMember(selectedUser.user_id);
+    }
+    setShowActionModal(false);
+    setSelectedUser(null);
+    setActionType(null);
+  };
+
+  const pushJoinCodeToGroupTable = async (joinCode: string) => {
+    const { error } = await supabase
+      .from("groups")
+      .update({ join_code: joinCode, join_code_creation_time: new Date() })
+      .eq("id", group.id);
+
+    if (error) {
+      console.error("Error updating join code:", error);
+    }
+  };
+  // Text box displaying current join code
+  // If box is empty (no join code to be fetched), display button to generate a new join code
+  // If join code is present, display text box with join code and button to copy it (maybe add a button to share to other platforms)
+  // Only show the join code if the user is the founder or a leader of the group
 
 // Helper to check if current user is founder or leader
 const canPromoteDemote = user.id === founder || leaders.includes(user.id);
@@ -182,6 +200,15 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <View style={styles.founderContainer}>
             <TouchableOpacity
               style={styles.memberRow}
+              disabled={founderUser.user_id === user.id}
+              onPress={() => {
+                if (founderUser.user_id !== user.id) {
+                  router.push({
+                    pathname: "/tabs/groups/inspect_user",
+                    params: { userToInspectId: founderUser.user_id },
+                  });
+                }
+              }}
             >
               {founderUser.profile_picture_url ? (
                 <Image
@@ -211,6 +238,17 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               <TouchableOpacity
                 key={leader.id}
                 style={styles.memberRow}
+                disabled={leader.user_id === user.id}
+                onPress={() => {
+                  if (leader.user_id !== user.id) {
+                    router.push({
+                      pathname: "/tabs/groups/inspect_user",
+                      params: { 
+                        userIdToInspect: leader.user_id 
+                      },
+                    });
+                  }
+                }}
                 onLongPress={
                   canPromoteDemote && leader.user_id !== user.id
                     ? () => openActionModal(leader, "demote")
@@ -245,6 +283,15 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               <TouchableOpacity
                 key={member.id}
                 style={styles.memberRow}
+                disabled={member.user_id === user.id}
+                onPress={() => {
+                  if (member.user_id !== user.id) {
+                    router.push({
+                      pathname: "/tabs/groups/inspect_user",
+                      params: { userToInspectId: member.user_id },
+                    });
+                  }
+                }}
                 onLongPress={
                   canPromoteDemote
                     ? () => openActionModal(member, "promote")
@@ -263,6 +310,37 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               </TouchableOpacity>
             ))}
           </>
+        )}
+
+        {(user.id === founder || leaders.includes(user.id)) && (
+          <View style={{ marginTop: 24, marginBottom: 24, backgroundColor: "#f3f0ff", borderRadius: 10, padding: 16 }}>
+            <Text style={{ fontWeight: "600", color: "#6b21a8", marginBottom: 8 }}>Group Join Code</Text>
+            {joinCode ? (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flex: 1, backgroundColor: "#fff", borderRadius: 8, padding: 10, borderWidth: 1, borderColor: "#e5e7eb" }}>
+                  <Text selectable style={{ fontSize: 16, letterSpacing: 1 }}>{joinCode}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => Clipboard.setStringAsync(joinCode)}
+                  style={{ marginLeft: 12, padding: 8, backgroundColor: "#7c3aed", borderRadius: 8 }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={async () => {
+                  // Generate a new join code (simple example: random 6 chars)
+                  const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                  setJoinCode(newCode);
+                  await pushJoinCodeToGroupTable(newCode);
+                }}
+                style={{ backgroundColor: "#7c3aed", borderRadius: 8, padding: 12, alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Generate Join Code</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {(user.id === founder || leaders.includes(user.id)) && (

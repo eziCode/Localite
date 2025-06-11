@@ -185,15 +185,26 @@ export default function ForeignGroupsView() {
                 {group.visibility === "hidden" && "🙈 Hidden"}
               </Text>
             )}
-
-            {group.invite_code && (
-              <Text style={styles.invite}>🔐 Invite Code: {group.invite_code}</Text>
-            )}
           </View>
 
-          {founderUser && (
+          {founderUser && founderUser.user_id !== user.id && (
   <View style={styles.founderContainer}>
-    <MemberRow name={founderUser.user_name} badge="Founder 👑" profile_picture_url={founderUser.profile_picture_url} />
+    <TouchableOpacity
+      onPress={() =>
+        router.push({
+          pathname: "/tabs/groups/inspect_user",
+          params: { userToInspectId: founderUser.user_id },
+        })
+      }
+      style={{ flex: 1 }}
+      activeOpacity={0.7}
+    >
+      <MemberRow
+        name={founderUser.user_name}
+        badge="Founder 👑"
+        profile_picture_url={founderUser.profile_picture_url}
+      />
+    </TouchableOpacity>
   </View>
 )}
 
@@ -207,9 +218,32 @@ export default function ForeignGroupsView() {
         </TouchableOpacity>
       )}
     </View>
-    {leadersUserInfos.slice(0, 5).map((leader) => (
-      <MemberRow key={leader.id} name={leader.user_name} profile_picture_url={leader.profile_picture_url} />
-    ))}
+    {leadersUserInfos.slice(0, 5).map((leader) =>
+      leader.user_id !== user.id ? (
+        <TouchableOpacity
+          key={leader.id}
+          onPress={() =>
+            router.push({
+              pathname: "/tabs/groups/inspect_user",
+              params: { userToInspectId: leader.user_id },
+            })
+          }
+          style={{ flex: 1 }}
+          activeOpacity={0.7}
+        >
+          <MemberRow
+            name={leader.user_name}
+            profile_picture_url={leader.profile_picture_url}
+          />
+        </TouchableOpacity>
+      ) : (
+        <MemberRow
+          key={leader.id}
+          name={leader.user_name}
+          profile_picture_url={leader.profile_picture_url}
+        />
+      )
+    )}
   </>
 )}
 
@@ -223,9 +257,32 @@ export default function ForeignGroupsView() {
         </TouchableOpacity>
       )}
     </View>
-    {membersUserInfos.slice(0, 5).map((member) => (
-      <MemberRow key={member.id} name={member.user_name} profile_picture_url={member.profile_picture_url} />
-    ))}
+    {membersUserInfos.slice(0, 5).map((member) =>
+      member.user_id !== user.id ? (
+        <TouchableOpacity
+          key={member.id}
+          onPress={() =>
+            router.push({
+              pathname: "/tabs/groups/inspect_user",
+              params: { userToInspectId: member.user_id },
+            })
+          }
+          style={{ flex: 1 }}
+          activeOpacity={0.7}
+        >
+          <MemberRow
+            name={member.user_name}
+            profile_picture_url={member.profile_picture_url}
+          />
+        </TouchableOpacity>
+      ) : (
+        <MemberRow
+          key={member.id}
+          name={member.user_name}
+          profile_picture_url={member.profile_picture_url}
+        />
+      )
+    )}
   </>
 )}
 
