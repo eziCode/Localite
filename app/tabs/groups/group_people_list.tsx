@@ -84,20 +84,24 @@ const GroupPeopleList = () => {
   }, [groupId, whoToFetch, cursor, loading, hasMore]);
 
   useEffect(() => {
+    // Only fetch when groupId or whoToFetch changes
     setUsers([]);
     setCursor(null);
     setHasMore(true);
+    setLoading(false);
     fetchUsers(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId, whoToFetch]);
 
-    // Cleanup on unmount to free memory
+  useEffect(() => {
+    // Cleanup only on unmount
     return () => {
       setUsers([]);
       setCursor(null);
       setHasMore(true);
       setLoading(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, whoToFetch]);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -140,6 +144,9 @@ const GroupPeopleList = () => {
         }}
         onEndReachedThreshold={0.5}
         ListFooterComponent={loading ? <ActivityIndicator style={{ margin: 20 }} /> : null}
+        removeClippedSubviews={true}
+        windowSize={7}
+        initialNumToRender={16}
       />
     </SafeAreaView>
   );
