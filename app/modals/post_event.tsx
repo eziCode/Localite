@@ -213,7 +213,11 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           {hasError("location") && <Text style={styles.fieldErrorText}>Location is required.</Text>}
 
           {predictions.length > 0 && (
-            <View style={styles.suggestionBox}>
+            <ScrollView
+              style={styles.suggestionBox}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
               {predictions.map((item) => (
                 <TouchableOpacity
                   key={item.id}
@@ -226,8 +230,9 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                   <Text style={styles.suggestionText}>{item.text}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           )}
+
 
           <TouchableOpacity
             onPress={() => {
@@ -401,8 +406,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    maxHeight: 150,
+    maxHeight: 200,
   },
+
   suggestion: {
     paddingVertical: 12,
     paddingHorizontal: 16,
