@@ -28,6 +28,8 @@ export default function OwnGroupsView() {
   const [showPostEventModal, setShowPostEventModal] = useState(false);
   const [events, setEvents] = useState<UserEvent[]>([]);
 
+  const [joinCode, setJoinCode] = useState<string>(group.join_code || "");
+
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PublicUser | null>(null);
   const [actionType, setActionType] = useState<"promote" | "demote" | null>(null);
@@ -151,17 +153,32 @@ export default function OwnGroupsView() {
     }
   };
 
-const handleActionConfirm = async () => {
-  if (!selectedUser || !actionType) return;
-  if (actionType === "promote") {
-    await makeMemberLeader(selectedUser.user_id);
-  } else if (actionType === "demote") {
-    await demoteLeaderToMember(selectedUser.user_id);
-  }
-  setShowActionModal(false);
-  setSelectedUser(null);
-  setActionType(null);
-};
+  const handleActionConfirm = async () => {
+    if (!selectedUser || !actionType) return;
+    if (actionType === "promote") {
+      await makeMemberLeader(selectedUser.user_id);
+    } else if (actionType === "demote") {
+      await demoteLeaderToMember(selectedUser.user_id);
+    }
+    setShowActionModal(false);
+    setSelectedUser(null);
+    setActionType(null);
+  };
+
+  const pushJoinCodeToGroupTable = async (joinCode: string) => {
+    const { error } = await supabase
+      .from("groups")
+      .update({ join_code: joinCode })
+      .eq("id", group.id);
+
+    if (error) {
+      console.error("Error updating join code:", error);
+    }
+  };
+  // Text box displaying current join code
+  // If box is empty (no join code to be fetched), display button to generate a new join code
+  // If join code is present, display text box with join code and button to copy it (maybe add a button to share to other platforms)
+  // Only show the join code if the user is the founder or a leader of the group
 
 // Helper to check if current user is founder or leader
 const canPromoteDemote = user.id === founder || leaders.includes(user.id);
