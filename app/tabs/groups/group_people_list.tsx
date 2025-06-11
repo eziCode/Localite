@@ -88,6 +88,15 @@ const GroupPeopleList = () => {
     setCursor(null);
     setHasMore(true);
     fetchUsers(true);
+
+    // Cleanup on unmount to free memory
+    return () => {
+      setUsers([]);
+      setCursor(null);
+      setHasMore(true);
+      setLoading(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, whoToFetch]);
 
   return (
