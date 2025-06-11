@@ -2,15 +2,15 @@ import { PublicUser } from '@/types/public_user';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Dimensions,
-    FlatList,
-    Image,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { supabase } from '../../../lib/supabase';
 
@@ -41,7 +41,7 @@ const GroupPeopleList = () => {
     // Fetch groupData to get ids
     const { data: groupData, error: groupError } = await supabase
       .from('groups')
-      .select('members, leaders')
+      .select('members, leaders, founder')
       .eq('id', groupId)
       .single();
 
@@ -51,7 +51,9 @@ const GroupPeopleList = () => {
       return;
     }
 
-    const ids = whoToFetch === 'leaders' ? groupData.leaders : groupData.members;
+    const ids = whoToFetch === 'leaders'
+      ? groupData.leaders
+      : groupData.members.filter((id: string) => !groupData.leaders.includes(id) && id !== groupData.founder);
     if (!ids || ids.length === 0) {
       setHasMore(false);
       setLoading(false);
