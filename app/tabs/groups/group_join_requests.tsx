@@ -201,7 +201,16 @@ const GroupJoinRequests = () => {
                     <View style={styles.avatar}>
                       <Text style={styles.avatarText}>{initials}</Text>
                     </View>
-                    <Text style={styles.userName}>{user.user_name}</Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: "/tabs/groups/inspect_user",
+                          params: { userToInspectId: user.user_id },
+                        })
+                      }
+                    >
+                      <Text style={styles.userName}>{user.user_name}</Text>
+                    </TouchableOpacity>
                     <Text style={styles.userAge}>Age: {user.age}</Text>
                     <View style={styles.messageBox}>
                       <Text style={styles.messageText}>&quot;{current.message}&quot;</Text>
