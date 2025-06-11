@@ -47,7 +47,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         .insert({
           name: groupName,
           description,
-          invite_code: null,
+          join_code: null,
           creator_id: user.id,
           members: [user.id],
           vibes: selectedVibes,

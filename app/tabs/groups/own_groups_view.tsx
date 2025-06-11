@@ -229,7 +229,10 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Leaders</Text>
               {leadersCount > 5 && (
-                <TouchableOpacity onPress={() => router.back()} style={styles.moreArrow}>
+                <TouchableOpacity onPress={() => {router.push({
+                  pathname: "/tabs/groups/group_people_list",
+                  params: { groupId: group.id, whoToFetch: "leaders" },
+                })}} style={styles.moreArrow}>
                   <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
                 </TouchableOpacity>
               )}
@@ -274,7 +277,10 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Members</Text>
               {membersCount > 5 && (
-                <TouchableOpacity onPress={() => {router.push({pathname: "/tabs/groups/group_people_list"})}} style={styles.moreArrow}>
+                <TouchableOpacity onPress={() => {router.push({
+                  pathname: "/tabs/groups/group_people_list",
+                  params: { groupId: group.id, whoToFetch: "members" },
+                })}} style={styles.moreArrow}>
                   <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
                 </TouchableOpacity>
               )}
