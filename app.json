@@ -9,10 +9,18 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "config": {
+        "googleMapsApiKey":  "AIzaSyCbSKZ-5JiXQDXfMC_-_-ALDZcJl0TKTe8"
+        },
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.Localite"
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDg04UmFWD9PRZ_hHsyAY9gUKXtTuSwtdY"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -27,6 +35,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Allow $(PRODUCT_NAME) to use your location"
+        }
+      ],
       [
         "expo-splash-screen",
         {
