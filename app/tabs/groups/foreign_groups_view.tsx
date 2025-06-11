@@ -185,10 +185,6 @@ export default function ForeignGroupsView() {
                 {group.visibility === "hidden" && "🙈 Hidden"}
               </Text>
             )}
-
-            {group.invite_code && (
-              <Text style={styles.invite}>🔐 Invite Code: {group.invite_code}</Text>
-            )}
           </View>
 
           {founderUser && founderUser.user_id !== user.id && (
