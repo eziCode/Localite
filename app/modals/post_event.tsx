@@ -29,6 +29,13 @@ type Prediction = {
   text: string;
 };
 
+function getAgeRange(avgAge: number) {
+  const spread = Math.log(avgAge) * 4;
+  const minAge = Math.max(13, Math.floor(avgAge - spread));
+  const maxAge = Math.min(100, Math.ceil(avgAge + spread));
+  return { minAge, maxAge };
+}
+
 const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) => {
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -109,7 +116,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     }
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     const newErrors: string[] = [];
 
     if (!title.trim()) newErrors.push("title");
@@ -129,7 +136,13 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     setErrors([]);
 
     const pushEvent = async () => {
-      const { error } = await supabase
+      const { data, error } = await supabase.rpc("average_group_age", { group_id: current_group?.id || null });
+      if (error) {
+        console.error("Error fetching average age:", error);
+        return;
+      }
+      const { minAge, maxAge } = getAgeRange(data);
+      const { error: insertError } = await supabase
         .from("events")
         .insert({
           title,
@@ -139,11 +152,13 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           end_time: endTime,
           organizer_id: user.id,
           group_id: current_group?.id || null,
-          post_only_to_group: postOnlyToGroup
+          post_only_to_group: postOnlyToGroup,
+          min_age: minAge,
+          max_age: maxAge,
         });
 
-      if (error) {
-        console.error("Error posting event:", error);
+      if (insertError) {
+        console.error("Error posting event:", insertError);
         return;
       }
     };
