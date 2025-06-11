@@ -33,7 +33,7 @@ export default function OwnGroupsView() {
 
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PublicUser | null>(null);
-  const [actionType, setActionType] = useState<"promote" | "demote" | null>(null);
+  const [actionType, setActionType] = useState<"promote" | "demote" | "kick" | null>(null);
 
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
@@ -44,6 +44,9 @@ export default function OwnGroupsView() {
   const [membersCount, setMemberCount] = useState<number>(members.length);
   const leaderToFetchCount = leadersCount && leadersCount > 5 ? 5 : leadersCount;
   const memberToFetchCount = membersCount > 5 ? 5 : membersCount;
+
+  const [showMemberOptions, setShowMemberOptions] = useState(false);
+  const [memberOptionUser, setMemberOptionUser] = useState<PublicUser | null>(null);
 
   useEffect(() => {
     const idsToFetch = [founder, ...leaders.slice(0, leaderToFetchCount), ...members.slice(0, memberToFetchCount)];
@@ -135,7 +138,25 @@ export default function OwnGroupsView() {
     }
   };
 
-  const openActionModal = (user: PublicUser, type: "promote" | "demote") => {
+  const kickGroupMember = async (userId: string) => {
+    const { error } = await supabase.rpc(
+      "kick_group_member", 
+      { member_to_remove: userId, group_to_edit: group.id }
+    );
+    if (error) {
+      console.error("Error kicking member:", error);
+    }
+    else {
+      // Update local state to reflect the change
+      setGroup((prev) => ({
+        ...prev,
+        members: prev.members.filter((id) => id !== userId),
+      }));
+      setMemberCount(membersCount - 1);
+    }
+  };
+
+  const openActionModal = (user: PublicUser, type: "promote" | "demote" | "kick") => {
     setSelectedUser(user);
     setActionType(type);
     setShowActionModal(true);
@@ -160,6 +181,8 @@ export default function OwnGroupsView() {
       await makeMemberLeader(selectedUser.user_id);
     } else if (actionType === "demote") {
       await demoteLeaderToMember(selectedUser.user_id);
+    } else if (actionType === "kick") {
+      await kickGroupMember(selectedUser.user_id);
     }
     setShowActionModal(false);
     setSelectedUser(null);
@@ -300,7 +323,14 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                 }}
                 onLongPress={
                   canPromoteDemote
-                    ? () => openActionModal(member, "promote")
+                    ? () => {
+                        if (user.id === founder && member.user_id !== founder) {
+                          setMemberOptionUser(member);
+                          setShowMemberOptions(true);
+                        } else {
+                          openActionModal(member, "promote");
+                        }
+                      }
                     : undefined
                 }
               >
@@ -431,15 +461,21 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <Text style={styles.modalTitle}>
             {actionType === "promote"
               ? `Promote ${selectedUser?.user_name} to Leader?`
-              : `Demote ${selectedUser?.user_name} to Member?`}
+              : actionType === "demote"
+              ? `Demote ${selectedUser?.user_name} to Member?`
+              : actionType === "kick"
+              ? `Kick ${selectedUser?.user_name} from the group?`
+              : ""}
           </Text>
           <Text style={styles.modalSubtext}>
-            This change will take effect immediately.
+            {actionType === "kick"
+              ? "This member will be removed from the group immediately."
+              : "This change will take effect immediately."}
           </Text>
 
           <View style={styles.modalButtons}>
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={[styles.cancelButton, { marginTop: 0, marginRight: 10, width: "48%" }]}
               onPress={() => setShowActionModal(false)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -448,17 +484,72 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
             <TouchableOpacity
               style={[
                 styles.confirmButton,
+                { width: "48%" },
                 actionType === "promote"
                   ? styles.promoteColor
-                  : styles.demoteColor,
+                  : actionType === "demote"
+                  ? styles.demoteColor
+                  : actionType === "kick"
+                  ? { backgroundColor: "#f43f5e" }
+                  : {},
               ]}
               onPress={handleActionConfirm}
             >
               <Text style={styles.confirmButtonText}>
-                {actionType === "promote" ? "Promote" : "Demote"}
+                {actionType === "promote"
+                  ? "Promote"
+                  : actionType === "demote"
+                  ? "Demote"
+                  : actionType === "kick"
+                  ? "Kick"
+                  : ""}
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </View>
+    </Modal>
+    <Modal
+      visible={showMemberOptions}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowMemberOptions(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>
+            What would you like to do with {memberOptionUser?.user_name}?
+          </Text>
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.confirmButton, styles.promoteColor, { marginRight: 10 }]}
+              onPress={() => {
+                setShowMemberOptions(false);
+                if (memberOptionUser) {
+                  openActionModal(memberOptionUser, "promote");
+                }
+              }}
+            >
+              <Text style={styles.confirmButtonText}>Promote</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.confirmButton, { backgroundColor: "#f43f5e" }]}
+              onPress={() => {
+                setShowMemberOptions(false);
+                if (memberOptionUser) {
+                  openActionModal(memberOptionUser, "kick");
+                }
+              }}
+            >
+              <Text style={styles.confirmButtonText}>Kick</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={[styles.cancelButton, { marginTop: 20, width: "100%", marginRight: 0 }]}
+            onPress={() => setShowMemberOptions(false)}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
@@ -615,9 +706,10 @@ const styles = StyleSheet.create({
   },
 
   modalContainer: {
-    width: "85%",
+    width: "95%",
     backgroundColor: "#fff",
-    padding: 24,
+    paddingVertical: 30, // Increased from 24 for more height
+    paddingHorizontal: 24,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -632,6 +724,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1f2937",
     textAlign: "center",
+    marginBottom: 28, // Increased spacing below title
   },
 
   modalSubtext: {
@@ -646,15 +739,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
+    marginBottom: 28, // Add more space below buttons
   },
 
   cancelButton: {
-    flex: 1,
-    paddingVertical: 10,
-    marginRight: 10,
+    paddingVertical: 16, // Increased button height
     backgroundColor: "#e5e7eb",
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    marginTop: 10, // Slightly less margin since modal is taller
   },
 
   cancelButtonText: {
@@ -664,7 +759,7 @@ const styles = StyleSheet.create({
 
   confirmButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 16, // Increased button height
     borderRadius: 8,
     alignItems: "center",
   },
