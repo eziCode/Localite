@@ -1,4 +1,5 @@
 import { PublicUser } from '@/types/public_user';
+import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -20,6 +21,7 @@ const ITEM_WIDTH = Dimensions.get('window').width / 4;
 const GroupPeopleList = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const isFocused = useIsFocused();
 
   const groupId = params.groupId as string;
   const whoToFetch = params.whoToFetch as string;
@@ -87,13 +89,14 @@ const GroupPeopleList = () => {
   }, [cursor, groupId, hasMore, whoToFetch]);
 
   useEffect(() => {
+    if (!isFocused) return;
     setUsers([]);
     setCursor(null);
     setHasMore(true);
     setLoading(false);
     fetchUsers(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, whoToFetch]);
+  }, [groupId, whoToFetch, isFocused]);
 
   useEffect(() => {
     return () => {
