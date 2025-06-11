@@ -1,6 +1,6 @@
 import { PublicUser } from '@/types/public_user';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Dimensions,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../../lib/supabase';
 
-const PAGE_SIZE = 24; // Number of users to fetch per request
+const PAGE_SIZE = 24;
 const ITEM_WIDTH = Dimensions.get('window').width / 4;
 
 const GroupPeopleList = () => {
@@ -22,17 +22,23 @@ const GroupPeopleList = () => {
   const params = useLocalSearchParams();
 
   const groupId = params.groupId as string;
-  const whoToFetch = params.whoToFetch as string; // 'members' or 'leaders'
+  const whoToFetch = params.whoToFetch as string;
 
   const [users, setUsers] = useState<PublicUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
+  // ✅ Robust fetch guard
+  const fetchingRef = useRef(false);
+
   const fetchUsers = useCallback(async (reset = false) => {
-    if (loading || (!hasMore && !reset)) return;
+    if (fetchingRef.current || (!hasMore && !reset)) return;
+
+    fetchingRef.current = true;
     setLoading(true);
 
+    // Fetch groupData to get ids
     const { data: groupData, error: groupError } = await supabase
       .from('groups')
       .select('members, leaders')
@@ -41,6 +47,7 @@ const GroupPeopleList = () => {
 
     if (groupError || !groupData) {
       setLoading(false);
+      fetchingRef.current = false;
       return;
     }
 
@@ -48,6 +55,7 @@ const GroupPeopleList = () => {
     if (!ids || ids.length === 0) {
       setHasMore(false);
       setLoading(false);
+      fetchingRef.current = false;
       return;
     }
 
@@ -58,33 +66,25 @@ const GroupPeopleList = () => {
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE);
 
-    if (cursor && !reset) {
+    if (!reset && cursor) {
       query = query.lt('created_at', cursor);
     }
 
     const { data, error } = await query;
 
-    if (error) {
-      setLoading(false);
-      return;
-    }
-
-    if (reset) {
-      setUsers(data);
-    } else {
-      setUsers(prev => [...prev, ...data]);
-    }
-
-    setHasMore(data.length >= PAGE_SIZE);
-    if (data.length > 0) {
+    if (!error && data && data.length > 0) {
+      setUsers(prev => reset ? data : [...prev, ...data]);
       setCursor(data[data.length - 1].created_at);
+      setHasMore(data.length === PAGE_SIZE);
+    } else {
+      setHasMore(false);
     }
 
     setLoading(false);
-  }, [groupId, whoToFetch, cursor, loading, hasMore]);
+    fetchingRef.current = false;
+  }, [cursor, groupId, hasMore, whoToFetch]);
 
   useEffect(() => {
-    // Only fetch when groupId or whoToFetch changes
     setUsers([]);
     setCursor(null);
     setHasMore(true);
@@ -94,7 +94,6 @@ const GroupPeopleList = () => {
   }, [groupId, whoToFetch]);
 
   useEffect(() => {
-    // Cleanup only on unmount
     return () => {
       setUsers([]);
       setCursor(null);
@@ -112,7 +111,6 @@ const GroupPeopleList = () => {
         <Text style={styles.headerTitle}>
           {whoToFetch === 'leaders' ? 'Leaders' : 'Members'}
         </Text>
-        {/* Spacer for symmetry */}
         <View style={{ width: 60 }} />
       </View>
       <FlatList
@@ -140,9 +138,10 @@ const GroupPeopleList = () => {
           </TouchableOpacity>
         )}
         onEndReached={() => {
+          console.log("onEndReached triggered");
           if (hasMore && !loading) fetchUsers();
         }}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.01} // ✅ Tighter threshold
         ListFooterComponent={loading ? <ActivityIndicator style={{ margin: 20 }} /> : null}
         removeClippedSubviews={true}
         windowSize={7}
