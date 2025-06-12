@@ -2,9 +2,8 @@ import { uploadUserInteraction } from '@/lib/helper_functions/uploadUserInteract
 import { PublicUser } from '@/types/public_user';
 import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -16,7 +15,6 @@ import {
 } from 'react-native';
 import { supabase } from '../../../lib/supabase';
 
-const PAGE_SIZE = 24;
 const ITEM_WIDTH = Dimensions.get('window').width / 4;
 
 const GroupPeopleList = () => {
@@ -29,18 +27,8 @@ const GroupPeopleList = () => {
   const userDoingInspectionId = params.userDoingInspection as string;
 
   const [users, setUsers] = useState<PublicUser[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
 
-  // ✅ Robust fetch guard
-  const fetchingRef = useRef(false);
-
-  const fetchUsers = useCallback(async (reset = false) => {
-    if (fetchingRef.current || (!hasMore && !reset)) return;
-
-    fetchingRef.current = true;
-    setLoading(true);
+  const fetchUsers = useCallback(async () => {
 
     // Fetch groupData to get ids
     const { data: groupData, error: groupError } = await supabase
@@ -50,62 +38,37 @@ const GroupPeopleList = () => {
       .single();
 
     if (groupError || !groupData) {
-      setLoading(false);
-      fetchingRef.current = false;
       return;
     }
 
     const ids = whoToFetch === 'leaders'
       ? groupData.leaders
       : groupData.members.filter((id: string) => !groupData.leaders.includes(id) && id !== groupData.founder);
+
     if (!ids || ids.length === 0) {
-      setHasMore(false);
-      setLoading(false);
-      fetchingRef.current = false;
       return;
     }
 
-    let query = supabase
+    const { data, error } = await supabase
       .from('users')
       .select('*')
-      .in('user_id', ids)
-      .order('created_at', { ascending: false })
-      .limit(PAGE_SIZE);
+      .in('user_id', ids);
 
-    if (!reset && cursor) {
-      query = query.lt('created_at', cursor);
-    }
-
-    const { data, error } = await query;
-
-    if (!error && data && data.length > 0) {
-      setUsers(prev => reset ? data : [...prev, ...data]);
-      setCursor(data[data.length - 1].created_at);
-      setHasMore(data.length === PAGE_SIZE);
+    if (!error && data) {
+      setUsers(data);
     } else {
-      setHasMore(false);
+      setUsers([]);
     }
-
-    setLoading(false);
-    fetchingRef.current = false;
-  }, [cursor, groupId, hasMore, whoToFetch]);
+  }, [groupId, whoToFetch]);
 
   useEffect(() => {
-    if (!isFocused) return;
-    setUsers([]);
-    setCursor(null);
-    setHasMore(true);
-    setLoading(false);
-    fetchUsers(true);
+    fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, whoToFetch, isFocused]);
 
   useEffect(() => {
     return () => {
       setUsers([]);
-      setCursor(null);
-      setHasMore(true);
-      setLoading(false);
     };
   }, []);
 
@@ -145,12 +108,7 @@ const GroupPeopleList = () => {
             </Text>
           </TouchableOpacity>
         )}
-        onEndReached={() => {
-          console.log("onEndReached triggered");
-          if (hasMore && !loading) fetchUsers();
-        }}
         onEndReachedThreshold={0.01} // ✅ Tighter threshold
-        ListFooterComponent={loading ? <ActivityIndicator style={{ margin: 20 }} /> : null}
         removeClippedSubviews={true}
         windowSize={7}
         initialNumToRender={16}
