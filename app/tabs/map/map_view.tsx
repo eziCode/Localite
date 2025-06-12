@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react"; //useEffect
-import { StyleSheet, TouchableOpacity, View } from "react-native"; //TouchableOpacity
+import { Alert, Linking, Platform, StyleSheet, TouchableOpacity, View } from "react-native"; //TouchableOpacity
 import MapView, { MAP_TYPES, PROVIDER_GOOGLE } from 'react-native-maps';
 
 export default function GeoMap() {
@@ -16,7 +16,16 @@ export default function GeoMap() {
   const userLocation = async () => { // Retrieve user's current location function
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") { // If denied
-      console.log("Permission to access location was denied.") // LATER: Show a popup to user to enable location services <---- #$*(#*@($*@#(*$(REU(#@*$(*@#($*())))))))
+      Alert.alert("Permission Denied", "Please enable location services in your device settings to use this feature.", [
+        {text: "Cancel", style: "cancel"}, 
+        {text: "Settings", onPress: () => {
+          if (Platform.OS === 'ios') {
+            Linking.openURL("app-settings:");
+          } else if (Platform.OS === 'android') {
+            Linking.openSettings();
+          }
+        }},
+      ]);
     }
 
     let location = await Location.getCurrentPositionAsync({});
