@@ -136,7 +136,24 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
     setErrors([]);
 
+    const { data: existingEvents, error: fetchExistingEventsError } = await supabase
+      .from("events")
+      .select("*")
+      .eq("title", title.trim())
+      .eq("location_name", location.trim())
+      .eq("organizer_id", user.id)
+
+    if (fetchExistingEventsError) {
+      console.error("Error fetching existing events:", fetchExistingEventsError);
+      return;
+    }
+    if (existingEvents.length > 0) {
+      setErrors(["eventExists"]);
+      return;
+    }
+
     const pushEvent = async () => {
+
       const { data, error } = await supabase.rpc("average_group_age", { group_id: current_group?.id || null });
       if (error) {
         console.error("Error fetching average age:", error);
@@ -366,6 +383,13 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             returnKeyType="done" // <-- add this
             onSubmitEditing={() => Keyboard.dismiss()} // <-- add this
           />
+          {errors.includes("eventExists") && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                An event with this name, location, and time already exists.
+              </Text>
+            </View>
+          )}
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
