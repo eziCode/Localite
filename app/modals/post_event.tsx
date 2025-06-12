@@ -178,7 +178,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       return;
     }
 
-    uploadUserInteraction(user.id, eventData.id, "posted_event", "event");
+    uploadUserInteraction(user.id, eventData[0]?.id, "posted_event", "event");
   };
 
   const hasError = (field: string) =>
