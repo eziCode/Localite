@@ -95,6 +95,7 @@ const GroupPeopleList = () => {
     setHasMore(true);
     setPage(0);
     fetchUsers(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, whoToFetch, isFocused]);
 
 
@@ -122,7 +123,7 @@ const GroupPeopleList = () => {
                 pathname: "/tabs/groups/inspect_user",
                 params: { userToInspectId: item.user_id },
               });
-              uploadUserInteraction(userDoingInspectionId, item.user_id, 'viewed profile of another user');
+              uploadUserInteraction(userDoingInspectionId, item.user_id, "viewed profile of another user", "user");
             }}
           >
             <Image

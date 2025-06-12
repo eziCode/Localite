@@ -2,16 +2,17 @@ import { supabase } from '../supabase';
 
 export async function uploadUserInteraction(
   userDoingAction: string,
-  userOnRecievingEndOfAction: string,
-  interactionType: string
+  itemOnRecievingEndOfAction: string,
+  interactionType: string,
+  targetType: string
 ) {
   const { error } = await supabase
     .from('user_interactions')
     .insert({
       user_id: userDoingAction,
       action: interactionType,
-      target_type: "user",
-      target_id: userOnRecievingEndOfAction,
+      target_type: targetType,
+      target_id: itemOnRecievingEndOfAction,
     });
 
   if (error) {

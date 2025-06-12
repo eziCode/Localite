@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import { JoinRequestWithGroup } from "@/types/join_request_with_group";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
@@ -204,6 +205,8 @@ export default function GroupsPage() {
       return;
     }
 
+    uploadUserInteraction(user?.id!, groupToJoin.id, "joined_group_by_code", "group");
+
     // Refresh groups after joining
     if (user?.id) {
       groupToJoin.members = [...(groupToJoin.members), user.id];
@@ -254,7 +257,15 @@ export default function GroupsPage() {
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                onPress={() => router.push({ pathname: "/tabs/groups/own_groups_view", params: { group: JSON.stringify(item), user: JSON.stringify(user) } })}
+                onPress={() => {
+                  router.push({ 
+                    pathname: "/tabs/groups/own_groups_view", 
+                    params: { group: JSON.stringify(item), user: JSON.stringify(user) } 
+                  });
+                  if (user?.id) {
+                    uploadUserInteraction(user.id, item.id, "viewed_personal_group", "group");
+                  }
+                }}
                 style={styles.card}>
                   <Text style={styles.groupName}>{item.name}</Text>
                   <Text style={styles.groupMeta}>{item.members?.length ?? 0} {item.members?.length === 1 ? "member" : "members"}</Text>
@@ -277,7 +288,15 @@ export default function GroupsPage() {
               scrollEnabled={false}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  onPress={() => router.push({ pathname: "/tabs/groups/foreign_groups_view", params: { group: JSON.stringify(item), user: JSON.stringify(user) } })}
+                  onPress={() => {
+                    router.push({ 
+                      pathname: "/tabs/groups/foreign_groups_view", 
+                      params: { group: JSON.stringify(item), user: JSON.stringify(user) } 
+                    });
+                    if (user?.id) {
+                      uploadUserInteraction(user.id, item.id, "viewed_foreign_group", "group");
+                    }
+                  }}
                   style={styles.suggestedGroup}
                 >
                   <Text style={styles.groupName}>{item.name}</Text>
