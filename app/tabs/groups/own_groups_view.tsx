@@ -558,6 +558,49 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 }
 
 const styles = StyleSheet.create({
+  modalContainer: {
+  width: "90%",
+  backgroundColor: "#fff",
+  paddingVertical: 28,
+  paddingHorizontal: 20,
+  borderRadius: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
+  elevation: 5,
+  alignItems: "center",
+},
+
+modalTitle: {
+  fontSize: 18,
+  fontWeight: "600",
+  color: "#1f2937",
+  textAlign: "center",
+  marginBottom: 24,
+},
+
+modalButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  width: "100%",
+},
+
+confirmButton: {
+  flex: 1,
+  paddingVertical: 14,
+  borderRadius: 10,
+  alignItems: "center",
+},
+
+cancelButton: {
+  backgroundColor: "#f3f4f6",
+  paddingVertical: 14,
+  borderRadius: 10,
+  width: "100%",
+  alignItems: "center",
+  marginTop: 16,
+},
   container: { backgroundColor: "#fafafa", flex: 1 },
   groupTitle: {
     fontSize: 28,
@@ -704,29 +747,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  modalContainer: {
-    width: "95%",
-    backgroundColor: "#fff",
-    paddingVertical: 30, // Increased from 24 for more height
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-    alignItems: "center",
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1f2937",
-    textAlign: "center",
-    marginBottom: 28, // Increased spacing below title
-  },
-
   modalSubtext: {
     fontSize: 14,
     color: "#6b7280",
@@ -734,36 +754,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: "center",
   },
-
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 28, // Add more space below buttons
-  },
-
-  cancelButton: {
-    paddingVertical: 16, // Increased button height
-    backgroundColor: "#e5e7eb",
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    marginTop: 10, // Slightly less margin since modal is taller
-  },
-
   cancelButtonText: {
     color: "#374151",
     fontWeight: "500",
   },
-
-  confirmButton: {
-    flex: 1,
-    paddingVertical: 16, // Increased button height
-    borderRadius: 8,
-    alignItems: "center",
-  },
-
   promoteColor: {
     backgroundColor: "#7c3aed",
   },
@@ -821,5 +815,5 @@ founderCloseText: {
   fontSize: 20,
   color: "#fbbf24",
   fontWeight: "bold",
-},
+}
 });
