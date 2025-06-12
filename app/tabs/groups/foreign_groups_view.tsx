@@ -213,7 +213,10 @@ export default function ForeignGroupsView() {
     <View style={styles.sectionWithArrow}>
       <Text style={styles.sectionHeader}>Leaders</Text>
       {leadersCount > 5 && (
-        <TouchableOpacity onPress={() => {router.push("/tabs/groups/group_people_list")}} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={() => {router.push({
+          pathname: "/tabs/groups/group_people_list",
+          params: { groupId: group.id, whoToFetch: "leaders", userDoingInspect: user.id },
+        })}} style={styles.moreArrow}>
           <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
         </TouchableOpacity>
       )}
@@ -252,7 +255,10 @@ export default function ForeignGroupsView() {
     <View style={styles.sectionWithArrow}>
       <Text style={styles.sectionHeader}>Members</Text>
       {membersCount > 5 && (
-        <TouchableOpacity onPress={() => {router.push("/tabs/groups/group_people_list")}} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={() => {router.push({
+          pathname: "/tabs/groups/group_people_list",
+          params: { groupId: group.id, whoToFetch: "members", userDoingInspect: user.id },
+        })}} style={styles.moreArrow}>
           <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
         </TouchableOpacity>
       )}
@@ -562,4 +568,7 @@ founderContainer: {
   borderLeftColor: "#fbbf24",
   borderLeftWidth: 4,
 },
+moreArrow: {
+    padding: 8,
+    },
 });

@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from '@/lib/helper_functions/uploadUserInteraction';
 import { PublicUser } from '@/types/public_user';
 import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -25,6 +26,7 @@ const GroupPeopleList = () => {
 
   const groupId = params.groupId as string;
   const whoToFetch = params.whoToFetch as string;
+  const userDoingInspectionId = params.userDoingInspection as string;
 
   const [users, setUsers] = useState<PublicUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -126,12 +128,13 @@ const GroupPeopleList = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.userItem}
-            onPress={() =>
+            onPress={() => {
               router.push({
                 pathname: "/tabs/groups/inspect_user",
                 params: { userToInspectId: item.user_id },
               })
-            }
+              uploadUserInteraction(userDoingInspectionId, item.user_id, 'viewed profile of another user');
+            }}
           >
             <Image
               source={{ uri: item.profile_picture_url ?? 'https://via.placeholder.com/80' }}
