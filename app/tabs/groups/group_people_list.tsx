@@ -29,7 +29,6 @@ const GroupPeopleList = () => {
   const [users, setUsers] = useState<PublicUser[]>([]);
 
   const fetchUsers = useCallback(async () => {
-
     // Fetch groupData to get ids
     const { data: groupData, error: groupError } = await supabase
       .from('groups')
@@ -65,12 +64,6 @@ const GroupPeopleList = () => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, whoToFetch, isFocused]);
-
-  useEffect(() => {
-    return () => {
-      setUsers([]);
-    };
-  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
