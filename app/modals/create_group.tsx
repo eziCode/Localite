@@ -38,6 +38,20 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
     }
 
     const fetchUser = async () => {
+      const { data: existingGroups, error: fetchExistingGroupsError } = await supabase
+        .from("groups")
+        .select("id")
+        .eq("name", groupName.trim())
+        .neq("visibility", "hidden");
+      
+      if (fetchExistingGroupsError) {
+        console.error(fetchExistingGroupsError);
+        return setError("Failed to check existing groups. Try again.");
+      }
+      if (existingGroups.length > 0) {
+        return setError("A group with this name already exists.");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return setError("You must be logged in to create a group.");
