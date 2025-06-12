@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { supabase } from '../../../lib/supabase';
 
+const PAGE_SIZE = 20;
+
 const ITEM_WIDTH = Dimensions.get('window').width / 4;
 
 const GroupPeopleList = () => {
@@ -27,43 +29,74 @@ const GroupPeopleList = () => {
   const userDoingInspectionId = params.userDoingInspection as string;
 
   const [users, setUsers] = useState<PublicUser[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchUsers = useCallback(async () => {
-    // Fetch groupData to get ids
-    const { data: groupData, error: groupError } = await supabase
+  const fetchUsers = useCallback(async (pageIndex = 0) => {
+    if (!hasMore && pageIndex > 0) return;
+    setIsLoading(true);
+    
+    // Fetch groupData
+    const {data: groupData, error: groupError} = await supabase
       .from('groups')
       .select('members, leaders, founder')
       .eq('id', groupId)
       .single();
 
     if (groupError || !groupData) {
+      setIsLoading(false);
       return;
     }
 
-    const ids = whoToFetch === 'leaders'
+    const idsRaw = whoToFetch === 'leaders'
       ? groupData.leaders
-      : groupData.members.filter((id: string) => !groupData.leaders.includes(id) && id !== groupData.founder);
+      : groupData.members.filter((id: string) =>
+          !groupData.leaders.includes(id) && id !== groupData.founder
+        );
 
-    if (!ids || ids.length === 0) {
+    const ids = idsRaw || [];
+    if (ids.length === 0) {
+      setHasMore(false);
+      setIsLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .in('user_id', ids);
+    // Sort or keep as-is
+    const offset = pageIndex * PAGE_SIZE;
+    const limit = PAGE_SIZE;
 
-    if (!error && data) {
-      setUsers(data);
+    const {data: batchData, error: dataError, count} = await supabase
+      .from('users')
+      .select('*', {count: 'exact'})
+      .in('user_id', ids)
+      .order('user_name', {ascending: true})
+      .range(offset, offset + limit - 1);
+
+    if (dataError) {
+      if (pageIndex === 0) setUsers([]);
+      setHasMore(false);
     } else {
-      setUsers([]);
+      if (pageIndex === 0) {
+        setUsers(batchData || []);
+      } else {
+        setUsers(prev => [...prev, ...(batchData ?? [])]);
+      }
+      const total = count ?? 0;
+      setHasMore(offset + (batchData?.length ?? 0) < total);
     }
-  }, [groupId, whoToFetch]);
+
+    setPage(pageIndex);
+    setIsLoading(false);
+  }, [groupId, whoToFetch, hasMore]);
 
   useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setUsers([]);
+    setHasMore(true);
+    setPage(0);
+    fetchUsers(0);
   }, [groupId, whoToFetch, isFocused]);
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -88,7 +121,7 @@ const GroupPeopleList = () => {
               router.push({
                 pathname: "/tabs/groups/inspect_user",
                 params: { userToInspectId: item.user_id },
-              })
+              });
               uploadUserInteraction(userDoingInspectionId, item.user_id, 'viewed profile of another user');
             }}
           >
@@ -101,10 +134,13 @@ const GroupPeopleList = () => {
             </Text>
           </TouchableOpacity>
         )}
-        onEndReachedThreshold={0.01} // ✅ Tighter threshold
-        removeClippedSubviews={true}
-        windowSize={7}
-        initialNumToRender={16}
+        onEndReached={() => {
+          if (!isLoading && hasMore) {
+            fetchUsers(page + 1);
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={isLoading ? <Text style={styles.loading}>Loading...</Text> : null}
       />
     </SafeAreaView>
   );
@@ -160,6 +196,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     color: '#333',
+  },
+  loading: {
+    textAlign: 'center',
+    color: '#888',
+    padding: 16,
+    fontSize: 15,
   },
 });
 
