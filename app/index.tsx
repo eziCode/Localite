@@ -32,17 +32,15 @@ export default function Index() {
       if (!isMounted) return;
       setDestination(session ? "/tabs/groups" : "/login_components/login");
       authDone = true;
-      if (isFirstMount || timerDone) setReady(true);
+      if (timerDone) setReady(true);
     };
 
-    // If not first mount, show loading for at least 1s
+    // Always use a timer: 500ms for first mount, 1000ms otherwise
     let timer: ReturnType<typeof setTimeout> | null = null;
-    if (!isFirstMount) {
-      timer = setTimeout(() => {
-        timerDone = true;
-        if (authDone) setReady(true);
-      }, 1000);
-    }
+    timer = setTimeout(() => {
+      timerDone = true;
+      if (authDone) setReady(true);
+    }, isFirstMount ? 250 : 1000);
 
     checkAuth();
 
