@@ -8,33 +8,48 @@ import {
 } from "react-native";
 import { supabase } from "../lib/supabase";
 
+// Module-level counter to track mounts in this session
+let mountCount = 0;
+
 export default function Index() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [destination, setDestination] = useState<null | "/tabs/groups" | "/login_components/login">(null);
-  const [firstLoad, setFirstLoad] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    let authDone = false;
+    let isMounted = true;
     let timerDone = false;
+    let authDone = false;
+
+    mountCount += 1;
+    const isFirstMount = mountCount === 1;
+    setShowSplash(isFirstMount);
 
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!isMounted) return;
       setDestination(session ? "/tabs/groups" : "/login_components/login");
       authDone = true;
-      if (timerDone) setReady(true);
+      if (isFirstMount || timerDone) setReady(true);
     };
 
-    const timer = setTimeout(() => {
-      timerDone = true;
-      setFirstLoad(false); // Hide splash visual if it’s been longer than 1s
-      if (authDone) setReady(true);
-    }, 1000);
+    // If not first mount, show loading for at least 1s
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (!isFirstMount) {
+      timer = setTimeout(() => {
+        timerDone = true;
+        if (authDone) setReady(true);
+      }, 1000);
+    }
 
     checkAuth();
 
-    return () => clearTimeout(timer);
+    return () => {
+      isMounted = false;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -51,14 +66,12 @@ export default function Index() {
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {firstLoad ? (
-        <>
-          <Image
-            source={require("../assets/images/localite_logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </>
+      {showSplash ? (
+        <Image
+          source={require("../assets/images/localite_logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
       ) : (
         <Text style={styles.text}>Loading...</Text>
       )}
@@ -71,7 +84,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9f5ef",
+    backgroundColor: "#faf7f3",
     zIndex: 10,
   },
   logo: {
