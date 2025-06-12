@@ -520,9 +520,10 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <Text style={styles.modalTitle}>
             What would you like to do with {memberOptionUser?.user_name}?
           </Text>
+
           <View style={styles.modalButtons}>
             <TouchableOpacity
-              style={[styles.confirmButton, styles.promoteColor, { marginRight: 10 }]}
+              style={[styles.confirmButton, styles.promoteColor, { marginRight: 8 }]}
               onPress={() => {
                 setShowMemberOptions(false);
                 if (memberOptionUser) {
@@ -532,6 +533,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
             >
               <Text style={styles.confirmButtonText}>Promote</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.confirmButton, { backgroundColor: "#f43f5e" }]}
               onPress={() => {
@@ -544,13 +546,15 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               <Text style={styles.confirmButtonText}>Kick</Text>
             </TouchableOpacity>
           </View>
+
           <TouchableOpacity
-            style={[styles.cancelButton, { marginTop: 20, width: "100%", marginRight: 0 }]}
+            style={styles.cancelButton}
             onPress={() => setShowMemberOptions(false)}
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
+
       </View>
     </Modal>
     </>
@@ -558,32 +562,26 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 }
 
 const styles = StyleSheet.create({
-  modalContainer: {
-  width: "90%",
-  backgroundColor: "#fff",
-  paddingVertical: 28,
-  paddingHorizontal: 20,
-  borderRadius: 20,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 10,
-  elevation: 5,
-  alignItems: "center",
-},
-
-modalTitle: {
+  modalTitle: {
   fontSize: 18,
   fontWeight: "600",
   color: "#1f2937",
   textAlign: "center",
-  marginBottom: 24,
+  marginBottom: 20,
+},
+
+modalSubtext: {
+  fontSize: 14,
+  color: "#6b7280",
+  textAlign: "center",
+  marginBottom: 20,
 },
 
 modalButtons: {
   flexDirection: "row",
   justifyContent: "space-between",
   width: "100%",
+  gap: 12, // cleaner spacing than marginRight hacks
 },
 
 confirmButton: {
@@ -600,6 +598,19 @@ cancelButton: {
   width: "100%",
   alignItems: "center",
   marginTop: 16,
+},
+  modalContainer: {
+  width: "90%",
+  backgroundColor: "#fff",
+  paddingVertical: 28,
+  paddingHorizontal: 20,
+  borderRadius: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
+  elevation: 5,
+  alignItems: "center",
 },
   container: { backgroundColor: "#fafafa", flex: 1 },
   groupTitle: {
@@ -746,13 +757,6 @@ cancelButton: {
     backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalSubtext: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginTop: 6,
-    marginBottom: 24,
-    textAlign: "center",
   },
   cancelButtonText: {
     color: "#374151",
