@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import type { PublicUser } from "@/types/public_user";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -190,12 +191,13 @@ export default function ForeignGroupsView() {
           {founderUser && founderUser.user_id !== user.id && (
   <View style={styles.founderContainer}>
     <TouchableOpacity
-      onPress={() =>
+      onPress={() => {
         router.push({
           pathname: "/tabs/groups/inspect_user",
           params: { userToInspectId: founderUser.user_id },
-        })
-      }
+        });
+        uploadUserInteraction(user.id, founderUser.id, "viewed_user_profile", "user");
+      }}
       style={{ flex: 1 }}
       activeOpacity={0.7}
     >
@@ -225,12 +227,13 @@ export default function ForeignGroupsView() {
       leader.user_id !== user.id ? (
         <TouchableOpacity
           key={leader.id}
-          onPress={() =>
+          onPress={() => {
             router.push({
               pathname: "/tabs/groups/inspect_user",
               params: { userToInspectId: leader.user_id },
-            })
-          }
+            });
+            uploadUserInteraction(user.id, leader.id, "viewed_user_profile", "user");
+          }}
           style={{ flex: 1 }}
           activeOpacity={0.7}
         >
@@ -267,12 +270,13 @@ export default function ForeignGroupsView() {
       member.user_id !== user.id ? (
         <TouchableOpacity
           key={member.id}
-          onPress={() =>
+          onPress={() => {
             router.push({
               pathname: "/tabs/groups/inspect_user",
               params: { userToInspectId: member.user_id },
             })
-          }
+            uploadUserInteraction(user.id, member.id, "viewed_user_profile", "user");
+          }}
           style={{ flex: 1 }}
           activeOpacity={0.7}
         >
@@ -317,6 +321,7 @@ export default function ForeignGroupsView() {
         style={styles.modalButton}
         onPress={() => {
           setShowRequestSentModal(false);
+          uploadUserInteraction(user.id, group.id, "requested_to_join_group", "group");
           router.back();
         }}
       >

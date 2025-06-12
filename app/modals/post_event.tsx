@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import {
@@ -165,6 +166,31 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
     pushEvent();
     onClose();
+
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id, username")
+      .eq("user_id", user.id)
+      .single();
+
+    if (userError) {
+      console.error("Error fetching user data:", userError);
+      return;
+    }
+
+    const { data: eventData, error: eventError } = await supabase
+      .from("events")
+      .select("id")
+      .eq("title", title)
+      .eq("organizer_id", user.id)
+      .single();
+      
+    if (eventError) {
+      console.error("Error fetching event data:", eventError);
+      return;
+    }
+
+    uploadUserInteraction(userData.id, eventData.id, "posted_event", "event");
   };
 
   const hasError = (field: string) =>

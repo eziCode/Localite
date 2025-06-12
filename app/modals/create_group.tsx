@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../lib/supabase";
@@ -47,7 +48,6 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         .insert({
           name: groupName,
           description,
-          join_code: null,
           creator_id: user.id,
           members: [user.id],
           vibes: selectedVibes,
@@ -61,6 +61,19 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         return setError("Failed to create group. Try again.");
       }
 
+      const { data: group, error: groupError } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("name", groupName)
+        .eq("creator_id", user.id)
+        .single();
+      
+      if (groupError) {
+        console.error(groupError);
+        return setError("Failed to retrieve created group. Try again.");
+      }
+
+      uploadUserInteraction(user.id, group.id as number, "created_group", "group");
       onGroupCreated();
       onClose();
     };
