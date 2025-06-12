@@ -101,15 +101,14 @@ const GroupPeopleList = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
+      <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>← Back</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
           {whoToFetch === 'leaders' ? 'Leaders' : 'Members'}
         </Text>
-        <View style={{ width: 60 }} />
-      </View>
+          </View>
       <FlatList
         data={users}
         keyExtractor={item => item.user_id}
@@ -148,6 +147,18 @@ const GroupPeopleList = () => {
 };
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: "#fafafa",
+  },
+  backButtonText: {
+    fontSize: 18,
+    color: "#7c3aed",
+  },
   container: {
     flex: 1,
     backgroundColor: '#f9f9f9',
@@ -164,11 +175,6 @@ const styles = StyleSheet.create({
   backButton: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#7c3aed',
-    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
