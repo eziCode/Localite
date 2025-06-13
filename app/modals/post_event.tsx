@@ -44,6 +44,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
+  const [checkingLanguage, setCheckingLanguage] = useState(false);
 
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -230,9 +231,11 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             onChangeText={(text) => {
               setTitle(text);
               setErrors((prev) => prev.filter(e => e !== "title" && e !== "eventExists"));
+              // Do NOT remove "title contains inappropriate language" here
             }}
             onBlur={async () => {
               if (title.trim()) {
+                setCheckingLanguage(true);
                 if (await hasInappropriateLanguage(title)) {
                   setErrors((prev) =>
                     prev.includes("title contains inappropriate language")
@@ -244,6 +247,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                     prev.filter(e => e !== "title contains inappropriate language")
                   );
                 }
+                setCheckingLanguage(false);
               }
             }}
             style={[styles.input, hasError("title") && styles.inputError]}
@@ -258,12 +262,63 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           {hasError("title") && <Text style={styles.fieldErrorText}>Title is required.</Text>}
 
           <TextInput
+            placeholder="Description (optional)"
+            placeholderTextColor="#6b7280"
+            value={description}
+            onChangeText={(text) => {
+              setDescription(text);
+              // Do NOT remove "description contains inappropriate language" here
+            }}
+            multiline
+            numberOfLines={4}
+            style={[
+              styles.input,
+              styles.descriptionInput,
+              errors.includes("description contains inappropriate language") && styles.inputError
+            ]}
+            blurOnSubmit={true}
+            returnKeyType="done"
+            onSubmitEditing={() => Keyboard.dismiss()}
+            onBlur={async () => {
+              if (description.trim()) {
+                setCheckingLanguage(true);
+                if (await hasInappropriateLanguage(description)) {
+                  setErrors((prev) =>
+                    prev.includes("description contains inappropriate language")
+                      ? prev
+                      : [...prev, "description contains inappropriate language"]
+                  );
+                } else {
+                  setErrors((prev) =>
+                    prev.filter(e => e !== "description contains inappropriate language")
+                  );
+                }
+                setCheckingLanguage(false);
+              }
+            }}
+          />
+          {errors.includes("description contains inappropriate language") && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                Description contains inappropriate language.
+              </Text>
+            </View>
+          )}
+
+          <TextInput
             placeholder="Location"
             placeholderTextColor="#6b7280"
             value={location}
             onChangeText={(text) => {
               setLocation(text);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "location" &&
+                    e !== "eventExists"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
               fetchAutocompletePredictions(text);
             }}
             style={[styles.input, hasError("location") && styles.inputError]}
@@ -296,7 +351,15 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             onPress={() => {
               Keyboard.dismiss();
               setShowStartPicker(true);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "startTime" &&
+                    e !== "startTimeInvalid" &&
+                    e !== "endTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
             }}
             style={styles.input}
           >
@@ -325,9 +388,17 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
           <TouchableOpacity
             onPress={() => {
-              Keyboard.dismiss(); // <-- dismiss keyboard
+              Keyboard.dismiss();
               setShowEndPicker(true);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "endTime" &&
+                    e !== "endTimeInvalid" &&
+                    e !== "startTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
             }}
             style={styles.input}
           >
@@ -359,7 +430,15 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             mode="datetime"
             onConfirm={(date) => {
               setStartTime(date);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "startTime" &&
+                    e !== "startTimeInvalid" &&
+                    e !== "endTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
               setShowStartPicker(false);
             }}
             onCancel={() => setShowStartPicker(false)}
@@ -372,7 +451,15 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             minimumDate={startTime || undefined}
             onConfirm={(date) => {
               setEndTime(date);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "endTime" &&
+                    e !== "endTimeInvalid" &&
+                    e !== "startTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
               setShowEndPicker(false);
             }}
             onCancel={() => setShowEndPicker(false)}
@@ -398,18 +485,6 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             </View>
           )}
 
-          <TextInput
-            placeholder="Description (optional)"
-            placeholderTextColor="#6b7280"
-            value={description}
-            onChangeText={(text) => setDescription(text)}
-            multiline
-            numberOfLines={4}
-            style={[styles.input, styles.descriptionInput]}
-            blurOnSubmit={true} // <-- add this
-            returnKeyType="done" // <-- add this
-            onSubmitEditing={() => Keyboard.dismiss()} // <-- add this
-          />
           {errors.includes("eventExists") && (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>
@@ -424,12 +499,20 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             <TouchableOpacity
               style={[
                 styles.postButton,
-                errors.includes("title contains inappropriate language") && { opacity: 0.5 }
+                (errors.includes("title contains inappropriate language") ||
+                  errors.includes("description contains inappropriate language") ||
+                  checkingLanguage) && { opacity: 0.5 }
               ]}
               onPress={handlePost}
-              disabled={errors.includes("title contains inappropriate language")}
+              disabled={
+                errors.includes("title contains inappropriate language") ||
+                errors.includes("description contains inappropriate language") ||
+                checkingLanguage
+              }
             >
-              <Text style={styles.postText}>Post</Text>
+              <Text style={styles.postText}>
+                {checkingLanguage ? "Checking..." : "Post"}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
