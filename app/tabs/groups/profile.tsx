@@ -145,13 +145,11 @@ export default function UserProfile() {
   };
 
   useEffect(() => {
+    if (!user?.id || !groups.length) return;
     fetchEvents();
     fetchUserProfilePicture();
-  }, [fetchEvents, fetchUserProfilePicture]);
+  }, [user?.id, groups]);
 
-  useEffect(() => {
-    fetchUserProfilePicture();
-  }, [fetchUserProfilePicture]);
 
   const eventsByDate = events.reduce<Record<string, UserEvent[]>>((acc, event) => {
     if (event.start_time) {
