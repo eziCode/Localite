@@ -1,3 +1,4 @@
+import { hasInappropriateLanguage } from "@/lib/helper_functions/hasInappropriateLanguage";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -28,6 +29,11 @@ export default function Signup() {
       setError("Please fill in all fields.");
       return;
     }
+    if (await hasInappropriateLanguage(username)) {
+      setError("Username contains inappropriate language.");
+      return;
+    }
+    
     if (isNaN(Number(age)) || Number(age) < 0) {
       setError("Please enter a valid age.");
       return;
