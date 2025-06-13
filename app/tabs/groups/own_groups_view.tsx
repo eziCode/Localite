@@ -270,7 +270,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                     console.log("Inspecting user:", leader.user_id);
                     router.push({
                       pathname: "/tabs/groups/inspect_user",
-                      params: { 
+                      params: {
                         userToInspectId: leader.user_id 
                       },
                     });
@@ -401,18 +401,21 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <Calendar
               onDayPress={(day) => setSelectedDate(day.dateString)}
               markedDates={{
-              [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
-              ...Object.keys(eventsByDate).reduce((acc, date) => {
+                [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
+                ...Object.keys(eventsByDate).reduce((acc, date) => {
                   acc[date] = { marked: true };
                   return acc;
-              }, {} as Record<string, any>),
+                }, {} as Record<string, any>),
               }}
               theme={{
-              selectedDayBackgroundColor: "#7c3aed",
-              todayTextColor: "#7c3aed",
+                selectedDayBackgroundColor: "#7c3aed",
+                todayTextColor: "#7c3aed",
               }}
               style={{ borderRadius: 10, marginBottom: 16 }}
-          />
+            />
+            <Text style={{ color: "#888", fontSize: 13, textAlign: "center", marginBottom: 8 }}>
+              All times are shown in your local time zone.
+            </Text>
 
           {eventsByDate[selectedDate]?.length ? (
             eventsByDate[selectedDate]
