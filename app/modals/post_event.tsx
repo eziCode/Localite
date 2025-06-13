@@ -122,7 +122,6 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     const newErrors: string[] = [];
 
     if (!title.trim()) newErrors.push("title");
-    if (await hasInappropriateLanguage(title)) newErrors.push("title contains inappropriate language");
     if (!location.trim()) newErrors.push("location");
     if (!startTime) newErrors.push("startTime");
     if (!endTime) newErrors.push("endTime");
@@ -216,7 +215,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // <-- add this line
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -230,7 +229,22 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             value={title}
             onChangeText={(text) => {
               setTitle(text);
-              setErrors([]);
+              setErrors((prev) => prev.filter(e => e !== "title" && e !== "eventExists"));
+            }}
+            onBlur={async () => {
+              if (title.trim()) {
+                if (await hasInappropriateLanguage(title)) {
+                  setErrors((prev) =>
+                    prev.includes("title contains inappropriate language")
+                      ? prev
+                      : [...prev, "title contains inappropriate language"]
+                  );
+                } else {
+                  setErrors((prev) =>
+                    prev.filter(e => e !== "title contains inappropriate language")
+                  );
+                }
+              }
             }}
             style={[styles.input, hasError("title") && styles.inputError]}
           />
@@ -407,7 +421,14 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
+            <TouchableOpacity
+              style={[
+                styles.postButton,
+                errors.includes("title contains inappropriate language") && { opacity: 0.5 }
+              ]}
+              onPress={handlePost}
+              disabled={errors.includes("title contains inappropriate language")}
+            >
               <Text style={styles.postText}>Post</Text>
             </TouchableOpacity>
           </View>
