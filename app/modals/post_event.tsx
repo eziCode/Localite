@@ -1,3 +1,4 @@
+import { hasInappropriateLanguage } from "@/lib/helper_functions/hasInappropriateLanguage";
 import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
@@ -121,6 +122,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     const newErrors: string[] = [];
 
     if (!title.trim()) newErrors.push("title");
+    if (await hasInappropriateLanguage(title)) newErrors.push("title contains inappropriate language");
     if (!location.trim()) newErrors.push("location");
     if (!startTime) newErrors.push("startTime");
     if (!endTime) newErrors.push("endTime");
@@ -228,6 +230,13 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             }}
             style={[styles.input, hasError("title") && styles.inputError]}
           />
+          {errors.includes("title contains inappropriate language") && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                Title contains inappropriate language.
+              </Text>
+            </View>
+          )}
           {hasError("title") && <Text style={styles.fieldErrorText}>Title is required.</Text>}
 
           <TextInput
@@ -507,3 +516,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+

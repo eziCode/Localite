@@ -1,3 +1,4 @@
+import { hasInappropriateLanguage } from "@/lib/helper_functions/hasInappropriateLanguage";
 import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -23,9 +24,12 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
     );
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!groupName.trim()) {
       return setError("Group name is required");
+    }
+    if (await hasInappropriateLanguage(groupName)) {
+      return setError("Group name contains inappropriate language");
     }
     if (groupName.length < 3) {
       return setError("Group name must be at least 3 characters");
