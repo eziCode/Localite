@@ -43,7 +43,7 @@ serve(async (req) => {
   // 2. Fetch recent interactions
   const { data: interactions, error: interactionError } = await supabase
     .from("user_interactions")
-    .select("action, metadata, action_occurred")
+    .select("*")
     .eq("user_id", user_id)
     .order("action_occurred", { ascending: false });
 
@@ -65,16 +65,16 @@ serve(async (req) => {
 
   // Scoring and filtering
   // prioritize events within 100 miles
-  const filteredEvents = events.filter(event => {
-    const eventStartTime = new Date(event.start_time);
-    const ageRange = event.age_range.split("-").map(Number);
-    const userAge = new Date().getFullYear() - new Date(user.birth_date).getFullYear();
-    
-    // Check if user's age is within the event's age range
-    const isAgeMatch = userAge >= ageRange[0] && userAge <= ageRange[1];
-    
-    // Check if event is within the next 30 days
-    const isWithinNext30Days = (eventStartTime.getTime() - Date.now()) <= (30 * 24 * 60 * 60 * 1000);
+  const filteredEvents = events.filter((event) => {
+    if (
+      event.min_age == null ||
+      event.max_age == null ||
+      event.latitude == null ||
+      event.longitude == null
+    ) return false;
+
+    const isAgeMatch = userAge >= event.min_age && userAge <= event.max_age;
+    const isWithinNext30Days = new Date(event.start_time).getTime() - Date.now() <= 30 * 24 * 60 * 60 * 1000;
 
     return isAgeMatch && isWithinNext30Days;
   });

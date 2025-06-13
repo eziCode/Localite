@@ -161,6 +161,8 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
         console.error("Error fetching average age:", error);
         return;
       }
+      const { latitude: locationLatitude, longitude: locationLongitude } = coords || {};
+
       const { minAge, maxAge } = getAgeRange(data);
       const { error: insertError } = await supabase
         .from("events")
@@ -168,6 +170,8 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           title,
           description,
           location_name: location,
+          latitude: locationLatitude,
+          longitude: locationLongitude,
           start_time: startTime,
           end_time: endTime,
           organizer_id: user.id,
