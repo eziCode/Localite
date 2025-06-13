@@ -24,23 +24,12 @@ serve(async (req) => {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4ZG5tc2pqb2Z5dGhzY2xlbGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNTI4ODEsImV4cCI6MjA2NDYyODg4MX0.VeC9ToiMvcyFSAXmISqJkdMDo-CVq1B7jliLxwyH4kk"
   );
 
-  const { user_id, userLatitude, userLongitude } = await req.json();
-  if (!user_id || !userLatitude || !userLongitude) {
-    return new Response(JSON.stringify({ error: "Missing user_id or location" }), { status: 400 });
+  const { user_id, userLatitude, userLongitude, userAge } = await req.json();
+  if (!user_id || !userLatitude || !userLongitude || !userAge) {
+    return new Response(JSON.stringify({ error: "Missing user_id or location or age" }), { status: 400 });
   }
 
-  // 1. Fetch user information
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .select("*")
-    .eq("user_id", user_id)
-    .single();
-  
-  if (userError) {
-    return new Response(JSON.stringify({ error: userError.message }), { status: 500 });
-  }
-
-  // 2. Fetch recent interactions
+  // 1. Fetch recent interactions
   const { data: interactions, error: interactionError } = await supabase
     .from("user_interactions")
     .select("*")
@@ -51,7 +40,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: interactionError.message }), { status: 500 });
   }
 
-  // 3. Fetch all events
+  // 2. Fetch all events
   const { data: events, error: eventError } = await supabase
     .from("events")
     .select("*")
@@ -78,6 +67,10 @@ serve(async (req) => {
 
     return isAgeMatch && isWithinNext30Days;
   });
+
+  if (filteredEvents.length === 0) {
+    return new Response(JSON.stringify({ message: "No events found" }), { status: 200 });
+  }
 
   const sortedEvents = filteredEvents
     .map(event => ({

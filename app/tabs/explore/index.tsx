@@ -1,11 +1,12 @@
-import { supabase } from "@/lib/supabase"; // adjust to your actual path
+import { supabase } from "@/lib/supabase";
+import { UserEvent } from "@/types/user_event";
 import * as Location from "expo-location";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function Explore() {
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
 
@@ -39,11 +40,36 @@ export default function Explore() {
           Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4ZG5tc2pqb2Z5dGhzY2xlbGd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA1Mjg4MSwiZXhwIjoyMDY0NjI4ODgxfQ.BVL_pmvhI_f6W_c8iXN6dSxOyPL5yzru5m_dCxg2JmE`, // use your real key or user token
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ user_id: user.id, userLatitude: latitude, userLongitude: longitude }),
+        body: JSON.stringify({ 
+          user_id: user.id, 
+          userLatitude: latitude, 
+          userLongitude: longitude,
+          userAge: user.user_metadata?.age,
+        }),
       });
 
       // handle response and potential error codes
-
+      switch (response.status) {
+        case 200: {
+          const events = await response.json() as UserEvent[];
+          setEvents(events || []);
+          break;
+        }
+        case 400: {
+          const error = await response.json();
+          console.error("Bad Request:", error);
+          break;
+        }
+        case 500: {
+          const error = await response.json();
+          console.error("Server Error:", error);
+          break;
+        }
+        default: {
+          console.error("Unexpected response status:", response.status);
+        }
+      }
+      setLoading(false);
     };
 
     fetchRankedEvents();

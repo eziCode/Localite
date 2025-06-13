@@ -1,5 +1,3 @@
-import { Float } from "react-native/Libraries/Types/CodegenTypes";
-
 export type UserEvent = {
     id: number;
     created_at: string;
@@ -12,6 +10,6 @@ export type UserEvent = {
     event_invite_code: string;
     post_only_to_group: boolean;
     location_name: string;
-    latitude: Float;
-    longitude: Float;
+    latitude: number;
+    longitude: number;
 };
