@@ -31,6 +31,8 @@ serve(async (req) => {
   const { data: events, error: eventError } = await supabase
     .from("events")
     .select("*")
+    .eq("post_only_to_group", false) // event is public
+    .gt("start_time", new Date().toISOString()) // event is in the future
     .order("start_time", { ascending: true });
 
   if (eventError) {
