@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (value: number) => (value * Math.PI) / 180;
@@ -131,29 +132,44 @@ export default function Explore() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#333" />
-        ) : events.length === 0 ? (
-          <Text style={styles.text}>No events found nearby.</Text>
-        ) : (
-          <FlatList
-            data={events}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderEvent}
-            contentContainerStyle={styles.listContent}
-          />
-        )}
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.pageTitle}>Explore Events Nearby</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color="#333" />
+          ) : events.length === 0 ? (
+            <Text style={styles.text}>No events found nearby.</Text>
+          ) : (
+            <FlatList
+              data={events}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderEvent}
+              contentContainerStyle={styles.listContent}
+            />
+          )}
+        </View>
+      </SafeAreaView>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5f6fa",
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f6fa",
-    paddingTop: 20,
+    paddingTop: 0,
+  },
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#222",
+    textAlign: "center",
+    marginBottom: 16,
+    marginTop: 8,
   },
   text: {
     fontSize: 20,
