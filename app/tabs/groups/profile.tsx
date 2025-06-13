@@ -148,6 +148,7 @@ export default function UserProfile() {
     if (!user?.id || !groups.length) return;
     fetchEvents();
     fetchUserProfilePicture();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, groups]);
 
 
