@@ -267,10 +267,11 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                 disabled={leader.user_id === user.id}
                 onPress={() => {
                   if (leader.user_id !== user.id) {
+                    console.log("Inspecting user:", leader.user_id);
                     router.push({
                       pathname: "/tabs/groups/inspect_user",
                       params: { 
-                        userIdToInspect: leader.user_id 
+                        userToInspectId: leader.user_id 
                       },
                     });
                   }
