@@ -3,9 +3,18 @@ import * as Location from 'expo-location';
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react"; //useEffect
 import { Alert, Linking, Platform, StyleSheet, TouchableOpacity, View } from "react-native"; //TouchableOpacity
-import MapView, { MAP_TYPES, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { MAP_TYPES, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { supabase } from "../../../lib/supabase";
+import type { UserEvent } from "../../../types/user_event";
 
 export default function GeoMap() {
+  type Region = {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  };
+
   const [mapRegion] = useState({ // U.S. coordiantes -- if user location is not set, this will be the default map region
     latitude: 38.7946,
     longitude: -99.5348,
@@ -21,7 +30,7 @@ export default function GeoMap() {
         {text: "Settings", onPress: () => {
           if (Platform.OS === 'ios') {
             Linking.openURL("app-settings:");
-          } else if (Platform.OS === 'android') {
+          } else {
             Linking.openSettings();
           }
         }},
@@ -38,8 +47,8 @@ export default function GeoMap() {
     }, 1000);
   }
 
-  const [currentRegion, setCurrentRegion] = useState({}); // The region that the user is currently looking at (lat, long, latDelta, longDelta)
-  const handleRegionChangeComplete = (region: React.SetStateAction<{}>) => {
+  const [currentRegion, setCurrentRegion] = useState<Region>({latitude:0,longitude:0,latitudeDelta:0,longitudeDelta:0}); // The region that the user is currently looking at (lat, long, latDelta, longDelta)
+  const handleRegionChangeComplete = (region: Region) => {
     setCurrentRegion(region);
 
     console.log('Current Region:', region); 
@@ -60,11 +69,38 @@ export default function GeoMap() {
     }
   }
 
+  // display 20 most upvoted events in the current view of the map
+  const [eventsInView, setEvents] = useState<UserEvent[]>([]); // State to hold events data
+  const fetchEventsInView = async () => {
+    const minLat = currentRegion.latitude - currentRegion.latitudeDelta/2;
+    const maxLat = currentRegion.latitude + currentRegion.latitudeDelta/2;
+    const minLng = currentRegion.longitude - currentRegion.longitudeDelta/2;
+    const maxLng = currentRegion.longitude + currentRegion.longitudeDelta/2;
+
+    const { data, error } = await supabase
+      .from("events")
+      .select("*")
+      .gte("latitude", minLat)
+      .lte("latitude", maxLat)
+      .gte("longitude", minLng)
+      .lte("longitude", maxLng)
+      .gte("start_time", new Date().toISOString()) // only get events that haven't started yet
+      .order("upvotes", { ascending: false }) // order by # of upvotes
+      .limit(20); // get top 20 events
+
+      if (error) console.error(error);
+      else setEvents(data);
+
+    // NEXT: DISPLAY EVENTS ON MAP WITH MARKERS <-- #$*()#@*$(*)@#&*$*#@&*$&@#*(&$*@(#&$(*@&#$*(@#))))
+  }
+
 
 
   useEffect(() => {
-    userLocation()
-  },[]); // empty brackets means that this function runs only once when the page renders
+    userLocation();
+
+    fetchEventsInView();
+  },[]); // empty brackets means that this runs only once when the page renders
 
   return (
 <>
@@ -72,7 +108,27 @@ export default function GeoMap() {
     <View style={{ flex: 1 }}>
       <MapView style={{ width: '100%', height: '100%' }} ref={mapRef} provider={PROVIDER_GOOGLE} initialRegion={mapRegion} onRegionChangeComplete={handleRegionChangeComplete} mapType={chosenType.type} showsUserLocation={true} />
         <View style={styles.mapOptionsContainer}>
-          
+          <Marker id="1" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="2" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="3" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="4" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="5" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="6" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="7" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="8" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="9" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="10" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="11" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="12" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="13" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="14" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="15" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="16" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="17" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="18" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="19" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+          <Marker id="20" coordinate={{ latitude: 0, longitude: 0 }}></Marker>
+
           <TouchableOpacity style={styles.mapOptions} onPress={userLocation}><MaterialIcons name="my-location" size={33} color="white" /></TouchableOpacity>
           <TouchableOpacity style={styles.mapOptions} onPress={changeMapType}><MaterialIcons name="map" size={33} color="white" /></TouchableOpacity>
         </View>
