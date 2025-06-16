@@ -29,9 +29,10 @@ function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, 
 export default function Explore() {
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
-
+  
   useEffect(() => {
     const fetchRankedEvents = async () => {
       setLoading(true);
