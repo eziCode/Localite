@@ -131,6 +131,7 @@ export default function Explore() {
     if (!loadingMore && hasMore && absoluteOffset !== null) {
       fetchRankedEvents(absoluteOffset, false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingMore, hasMore, absoluteOffset]);
 
   const renderEvent = ({ item }: { item: UserEvent }) => {
