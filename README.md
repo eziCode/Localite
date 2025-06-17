@@ -40,71 +40,55 @@
 
 ## 🧱 Project Structure
 
-/app
-/tabs
-/explore → Event discovery screen
-/groups → Group management screens
-/components → Shared React Native components
-/lib
-supabase.ts → Supabase client setup
-/types → TypeScript models (UserEvent, Group, etc.)
-/supabase
-/functions
-rank_events → Edge function for event ranking
+```txt
+localite/
+├── app/
+│   ├── tabs/
+│   │   ├── explore/           # Event discovery screen
+│   │   └── groups/            # Group management screens
+│   ├── components/            # Shared UI components
+│   └── lib/
+│       └── supabase.ts        # Supabase client setup
+├── types/                     # TypeScript models (UserEvent, Group, etc.)
+├── supabase/
+│   └── functions/
+│       └── rank_events/       # Edge function for event ranking
 
-yaml
-Copy
-Edit
+## ⚙️ Getting Started
+Follow these steps to get Localite running locally:
 
----
-
-## ⚙️ Setup Instructions
-
-### 1. Clone the Repo
-
-```bash
+1. 🚀 Clone the Repository
 git clone https://github.com/yourname/localite.git
 cd localite
-2. Install Dependencies
-bash
-Copy
-Edit
+
+2. 📦 Install Dependencies
 npm install
-3. Start the App
-bash
-Copy
-Edit
+
+3. 📱 Start the App
 npx expo start
-4. Environment Configuration
-Create a .env file (or configure directly in your code) with:
 
-env
-Copy
-Edit
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-5. Deploy Edge Function
-From /supabase/functions:
-
-bash
-Copy
-Edit
+4. ⚡ Deploy Edge Functions
+Navigate to the supabase/functions directory and deploy the event ranking function:
 supabase functions deploy rank_events
-📸 Screenshots
-Add screenshots here of the Explore screen, Group UI, and event posting modal.
 
-📌 Todo / Roadmap
- Interest-based recommendation engine
-
- In-app chat for event discussions
-
- Event RSVP system
-
- Push notifications for nearby events
-
-👨‍💻 Author
-Developed by Ezra Akresh
-Special thanks to the open-source and Supabase community
+👨‍💻 Authors
+Ezra Akresh & Anshdeep Singh
+Special thanks to the open-source community and Supabase team for tools, inspiration, and support.
 
 📄 License
+This project is licensed under the MIT License.
+You are free to use, copy, modify, merge, publish, and distribute this software with attribution.
+
 MIT License
+
+Copyright (c) 2025 Ezra Akresh
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
