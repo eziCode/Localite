@@ -86,7 +86,12 @@ export default function Explore() {
       });
 
       if (response.status === 200) {
-        const { events: newEvents, has_more } = await response.json() as { events: UserEvent[], has_more: boolean };
+        const { events: newEvents, has_more, next_page } = await response.json() as {
+          events: UserEvent[],
+          has_more: boolean,
+          next_page: number | null
+        };
+
         if (pageToLoad === 1) {
           setEvents(newEvents);
         } else {
@@ -94,7 +99,9 @@ export default function Explore() {
         }
 
         setHasMore(has_more);
-        setPage(pageToLoad);
+        if (next_page != null) {
+          setPage(next_page);
+        }
       } else {
         const error = await response.json();
         console.error(`Error ${response.status}:`, error);

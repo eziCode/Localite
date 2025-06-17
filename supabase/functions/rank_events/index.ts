@@ -44,6 +44,7 @@ serve(async (req) => {
   const collectedEvents: any[] = [];
   let fetchOffset = (page - 1) * pageSize * 2;
   let moreToFetch = true;
+  let loopCount = 0;
 
   while (collectedEvents.length < pageSize && moreToFetch) {
     const { data: events, error: eventError } = await supabase
@@ -83,15 +84,19 @@ serve(async (req) => {
       // No more events in the database
       moreToFetch = false;
     }
+    loopCount++;
   }
 
   // Only send up to `pageSize` events, but indicate if more are available
   const sliced = collectedEvents.slice(0, pageSize);
   const hasMore = collectedEvents.length > pageSize || moreToFetch;
+  const nextPage = hasMore ? page + loopCount : null;
+
 
   return new Response(JSON.stringify({
     events: sliced,
     has_more: hasMore,
+    next_page: nextPage,
   }), {
     headers: { "Content-Type": "application/json" },
     status: 200,
