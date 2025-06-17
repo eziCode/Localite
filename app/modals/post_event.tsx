@@ -1,3 +1,5 @@
+import { hasInappropriateLanguage } from "@/lib/helper_functions/hasInappropriateLanguage";
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,12 +31,20 @@ type Prediction = {
   text: string;
 };
 
+function getAgeRange(avgAge: number) {
+  const spread = Math.log(avgAge) * 4;
+  const minAge = Math.max(13, Math.floor(avgAge - spread));
+  const maxAge = Math.min(100, Math.ceil(avgAge + spread));
+  return { minAge, maxAge };
+}
+
 const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) => {
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
+  const [checkingLanguage, setCheckingLanguage] = useState(false);
 
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -109,7 +119,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     }
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     const newErrors: string[] = [];
 
     if (!title.trim()) newErrors.push("title");
@@ -128,28 +138,70 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
     setErrors([]);
 
+    const { data: existingEvents, error: fetchExistingEventsError } = await supabase
+      .from("events")
+      .select("*")
+      .eq("title", title.trim())
+      .eq("location_name", location.trim())
+      .eq("organizer_id", user.id)
+
+    if (fetchExistingEventsError) {
+      console.error("Error fetching existing events:", fetchExistingEventsError);
+      return;
+    }
+    if (existingEvents.length > 0) {
+      setErrors(["eventExists"]);
+      return;
+    }
+
     const pushEvent = async () => {
-      const { error } = await supabase
+
+      const { data, error } = await supabase.rpc("average_group_age", { group_id: current_group?.id || null });
+      if (error) {
+        console.error("Error fetching average age:", error);
+        return;
+      }
+      const { latitude: locationLatitude, longitude: locationLongitude } = coords || {};
+
+      const { minAge, maxAge } = getAgeRange(data);
+      const { error: insertError } = await supabase
         .from("events")
         .insert({
           title,
           description,
           location_name: location,
+          latitude: locationLatitude,
+          longitude: locationLongitude,
           start_time: startTime,
           end_time: endTime,
           organizer_id: user.id,
           group_id: current_group?.id || null,
-          post_only_to_group: postOnlyToGroup
+          post_only_to_group: postOnlyToGroup,
+          min_age: minAge,
+          max_age: maxAge,
         });
 
-      if (error) {
-        console.error("Error posting event:", error);
+      if (insertError) {
+        console.error("Error posting event:", insertError);
         return;
       }
     };
 
     pushEvent();
     onClose();
+
+    const { data: eventData, error: eventError } = await supabase
+      .from("events")
+      .select("id")
+      .eq("title", title.trim())
+      .eq("organizer_id", user.id);
+
+    if (eventError) {
+      console.error("Error fetching event data:", eventError);
+      return;
+    }
+
+    uploadUserInteraction(user.id, eventData[0]?.id, "posted_event", "event");
   };
 
   const hasError = (field: string) =>
@@ -164,7 +216,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // <-- add this line
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -178,11 +230,80 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             value={title}
             onChangeText={(text) => {
               setTitle(text);
-              setErrors([]);
+              setErrors((prev) => prev.filter(e => e !== "title" && e !== "eventExists"));
+              // Do NOT remove "title contains inappropriate language" here
+            }}
+            onBlur={async () => {
+              if (title.trim()) {
+                setCheckingLanguage(true);
+                if (await hasInappropriateLanguage(title)) {
+                  setErrors((prev) =>
+                    prev.includes("title contains inappropriate language")
+                      ? prev
+                      : [...prev, "title contains inappropriate language"]
+                  );
+                } else {
+                  setErrors((prev) =>
+                    prev.filter(e => e !== "title contains inappropriate language")
+                  );
+                }
+                setCheckingLanguage(false);
+              }
             }}
             style={[styles.input, hasError("title") && styles.inputError]}
           />
+          {errors.includes("title contains inappropriate language") && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                Title contains inappropriate language.
+              </Text>
+            </View>
+          )}
           {hasError("title") && <Text style={styles.fieldErrorText}>Title is required.</Text>}
+
+          <TextInput
+            placeholder="Description (optional)"
+            placeholderTextColor="#6b7280"
+            value={description}
+            onChangeText={(text) => {
+              setDescription(text);
+              // Do NOT remove "description contains inappropriate language" here
+            }}
+            multiline
+            numberOfLines={4}
+            style={[
+              styles.input,
+              styles.descriptionInput,
+              errors.includes("description contains inappropriate language") && styles.inputError
+            ]}
+            blurOnSubmit={true}
+            returnKeyType="done"
+            onSubmitEditing={() => Keyboard.dismiss()}
+            onBlur={async () => {
+              if (description.trim()) {
+                setCheckingLanguage(true);
+                if (await hasInappropriateLanguage(description)) {
+                  setErrors((prev) =>
+                    prev.includes("description contains inappropriate language")
+                      ? prev
+                      : [...prev, "description contains inappropriate language"]
+                  );
+                } else {
+                  setErrors((prev) =>
+                    prev.filter(e => e !== "description contains inappropriate language")
+                  );
+                }
+                setCheckingLanguage(false);
+              }
+            }}
+          />
+          {errors.includes("description contains inappropriate language") && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                Description contains inappropriate language.
+              </Text>
+            </View>
+          )}
 
           <TextInput
             placeholder="Location"
@@ -190,7 +311,14 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             value={location}
             onChangeText={(text) => {
               setLocation(text);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "location" &&
+                    e !== "eventExists"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
               fetchAutocompletePredictions(text);
             }}
             style={[styles.input, hasError("location") && styles.inputError]}
@@ -198,7 +326,11 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           {hasError("location") && <Text style={styles.fieldErrorText}>Location is required.</Text>}
 
           {predictions.length > 0 && (
-            <View style={styles.suggestionBox}>
+            <ScrollView
+              style={styles.suggestionBox}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
               {predictions.map((item) => (
                 <TouchableOpacity
                   key={item.id}
@@ -211,14 +343,23 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                   <Text style={styles.suggestionText}>{item.text}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           )}
+
 
           <TouchableOpacity
             onPress={() => {
               Keyboard.dismiss();
               setShowStartPicker(true);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "startTime" &&
+                    e !== "startTimeInvalid" &&
+                    e !== "endTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
             }}
             style={styles.input}
           >
@@ -247,9 +388,17 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
           <TouchableOpacity
             onPress={() => {
-              Keyboard.dismiss(); // <-- dismiss keyboard
+              Keyboard.dismiss();
               setShowEndPicker(true);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "endTime" &&
+                    e !== "endTimeInvalid" &&
+                    e !== "startTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
             }}
             style={styles.input}
           >
@@ -281,7 +430,15 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             mode="datetime"
             onConfirm={(date) => {
               setStartTime(date);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "startTime" &&
+                    e !== "startTimeInvalid" &&
+                    e !== "endTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
               setShowStartPicker(false);
             }}
             onCancel={() => setShowStartPicker(false)}
@@ -294,7 +451,15 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             minimumDate={startTime || undefined}
             onConfirm={(date) => {
               setEndTime(date);
-              setErrors([]);
+              setErrors((prev) =>
+                prev.filter(
+                  e =>
+                    e !== "endTime" &&
+                    e !== "endTimeInvalid" &&
+                    e !== "startTimeInvalid"
+                  // Do NOT remove inappropriate language errors here
+                )
+              );
               setShowEndPicker(false);
             }}
             onCancel={() => setShowEndPicker(false)}
@@ -320,24 +485,34 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             </View>
           )}
 
-          <TextInput
-            placeholder="Description (optional)"
-            placeholderTextColor="#6b7280"
-            value={description}
-            onChangeText={(text) => setDescription(text)}
-            multiline
-            numberOfLines={4}
-            style={[styles.input, styles.descriptionInput]}
-            blurOnSubmit={true} // <-- add this
-            returnKeyType="done" // <-- add this
-            onSubmitEditing={() => Keyboard.dismiss()} // <-- add this
-          />
+          {errors.includes("eventExists") && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>
+                An event with this name, location, and time already exists.
+              </Text>
+            </View>
+          )}
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-              <Text style={styles.postText}>Post</Text>
+            <TouchableOpacity
+              style={[
+                styles.postButton,
+                (errors.includes("title contains inappropriate language") ||
+                  errors.includes("description contains inappropriate language") ||
+                  checkingLanguage) && { opacity: 0.5 }
+              ]}
+              onPress={handlePost}
+              disabled={
+                errors.includes("title contains inappropriate language") ||
+                errors.includes("description contains inappropriate language") ||
+                checkingLanguage
+              }
+            >
+              <Text style={styles.postText}>
+                {checkingLanguage ? "Checking..." : "Post"}
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -386,8 +561,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    maxHeight: 150,
+    maxHeight: 200,
   },
+
   suggestion: {
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -448,3 +624,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+

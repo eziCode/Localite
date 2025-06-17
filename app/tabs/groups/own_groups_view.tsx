@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import { PublicUser } from "@/types/public_user";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
@@ -33,7 +34,7 @@ export default function OwnGroupsView() {
 
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PublicUser | null>(null);
-  const [actionType, setActionType] = useState<"promote" | "demote" | null>(null);
+  const [actionType, setActionType] = useState<"promote" | "demote" | "kick" | null>(null);
 
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
@@ -44,6 +45,9 @@ export default function OwnGroupsView() {
   const [membersCount, setMemberCount] = useState<number>(members.length);
   const leaderToFetchCount = leadersCount && leadersCount > 5 ? 5 : leadersCount;
   const memberToFetchCount = membersCount > 5 ? 5 : membersCount;
+
+  const [showMemberOptions, setShowMemberOptions] = useState(false);
+  const [memberOptionUser, setMemberOptionUser] = useState<PublicUser | null>(null);
 
   useEffect(() => {
     const idsToFetch = [founder, ...leaders.slice(0, leaderToFetchCount), ...members.slice(0, memberToFetchCount)];
@@ -135,7 +139,25 @@ export default function OwnGroupsView() {
     }
   };
 
-  const openActionModal = (user: PublicUser, type: "promote" | "demote") => {
+  const kickGroupMember = async (userId: string) => {
+    const { error } = await supabase.rpc(
+      "kick_group_member", 
+      { member_to_remove: userId, group_to_edit: group.id }
+    );
+    if (error) {
+      console.error("Error kicking member:", error);
+    }
+    else {
+      // Update local state to reflect the change
+      setGroup((prev) => ({
+        ...prev,
+        members: prev.members.filter((id) => id !== userId),
+      }));
+      setMemberCount(membersCount - 1);
+    }
+  };
+
+  const openActionModal = (user: PublicUser, type: "promote" | "demote" | "kick") => {
     setSelectedUser(user);
     setActionType(type);
     setShowActionModal(true);
@@ -160,6 +182,8 @@ export default function OwnGroupsView() {
       await makeMemberLeader(selectedUser.user_id);
     } else if (actionType === "demote") {
       await demoteLeaderToMember(selectedUser.user_id);
+    } else if (actionType === "kick") {
+      await kickGroupMember(selectedUser.user_id);
     }
     setShowActionModal(false);
     setSelectedUser(null);
@@ -207,6 +231,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                     pathname: "/tabs/groups/inspect_user",
                     params: { userToInspectId: founderUser.user_id },
                   });
+                  uploadUserInteraction(user.id, founderUser.id, "viewed_user_profile", "user");
                 }
               }}
             >
@@ -231,7 +256,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               {leadersCount > 5 && (
                 <TouchableOpacity onPress={() => {router.push({
                   pathname: "/tabs/groups/group_people_list",
-                  params: { groupId: group.id, whoToFetch: "leaders" },
+                  params: { groupId: group.id, whoToFetch: "leaders", userDoingInspection: user.id },
                 })}} style={styles.moreArrow}>
                   <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
                 </TouchableOpacity>
@@ -246,10 +271,11 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                   if (leader.user_id !== user.id) {
                     router.push({
                       pathname: "/tabs/groups/inspect_user",
-                      params: { 
-                        userIdToInspect: leader.user_id 
+                      params: {
+                        userToInspectId: leader.user_id 
                       },
                     });
+                    uploadUserInteraction(user.id, leader.id, "viewed_user_profile", "user");
                   }
                 }}
                 onLongPress={
@@ -279,7 +305,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               {membersCount > 5 && (
                 <TouchableOpacity onPress={() => {router.push({
                   pathname: "/tabs/groups/group_people_list",
-                  params: { groupId: group.id, whoToFetch: "members" },
+                  params: { groupId: group.id, whoToFetch: "members", userDoingInspection: user.id },
                 })}} style={styles.moreArrow}>
                   <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
                 </TouchableOpacity>
@@ -296,11 +322,19 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                       pathname: "/tabs/groups/inspect_user",
                       params: { userToInspectId: member.user_id },
                     });
+                    uploadUserInteraction(user.id, member.id, "viewed_user_profile", "user");
                   }
                 }}
                 onLongPress={
                   canPromoteDemote
-                    ? () => openActionModal(member, "promote")
+                    ? () => {
+                        if (user.id === founder && member.user_id !== founder) {
+                          setMemberOptionUser(member);
+                          setShowMemberOptions(true);
+                        } else {
+                          openActionModal(member, "promote");
+                        }
+                      }
                     : undefined
                 }
               >
@@ -370,18 +404,21 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <Calendar
               onDayPress={(day) => setSelectedDate(day.dateString)}
               markedDates={{
-              [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
-              ...Object.keys(eventsByDate).reduce((acc, date) => {
+                [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
+                ...Object.keys(eventsByDate).reduce((acc, date) => {
                   acc[date] = { marked: true };
                   return acc;
-              }, {} as Record<string, any>),
+                }, {} as Record<string, any>),
               }}
               theme={{
-              selectedDayBackgroundColor: "#7c3aed",
-              todayTextColor: "#7c3aed",
+                selectedDayBackgroundColor: "#7c3aed",
+                todayTextColor: "#7c3aed",
               }}
               style={{ borderRadius: 10, marginBottom: 16 }}
-          />
+            />
+            <Text style={{ color: "#888", fontSize: 13, textAlign: "center", marginBottom: 8 }}>
+              All times are shown in your local time zone.
+            </Text>
 
           {eventsByDate[selectedDate]?.length ? (
             eventsByDate[selectedDate]
@@ -431,15 +468,21 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
           <Text style={styles.modalTitle}>
             {actionType === "promote"
               ? `Promote ${selectedUser?.user_name} to Leader?`
-              : `Demote ${selectedUser?.user_name} to Member?`}
+              : actionType === "demote"
+              ? `Demote ${selectedUser?.user_name} to Member?`
+              : actionType === "kick"
+              ? `Kick ${selectedUser?.user_name} from the group?`
+              : ""}
           </Text>
           <Text style={styles.modalSubtext}>
-            This change will take effect immediately.
+            {actionType === "kick"
+              ? "This member will be removed from the group immediately."
+              : "This change will take effect immediately."}
           </Text>
 
           <View style={styles.modalButtons}>
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={[styles.cancelButton, { marginTop: 0, marginRight: 10, width: "48%" }]}
               onPress={() => setShowActionModal(false)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -448,18 +491,77 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
             <TouchableOpacity
               style={[
                 styles.confirmButton,
+                { width: "48%" },
                 actionType === "promote"
                   ? styles.promoteColor
-                  : styles.demoteColor,
+                  : actionType === "demote"
+                  ? styles.demoteColor
+                  : actionType === "kick"
+                  ? { backgroundColor: "#f43f5e" }
+                  : {},
               ]}
               onPress={handleActionConfirm}
             >
               <Text style={styles.confirmButtonText}>
-                {actionType === "promote" ? "Promote" : "Demote"}
+                {actionType === "promote"
+                  ? "Promote"
+                  : actionType === "demote"
+                  ? "Demote"
+                  : actionType === "kick"
+                  ? "Kick"
+                  : ""}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+    </Modal>
+    <Modal
+      visible={showMemberOptions}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowMemberOptions(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>
+            What would you like to do with {memberOptionUser?.user_name}?
+          </Text>
+
+          <View style={styles.modalButtons}>
+            <TouchableOpacity
+              style={[styles.confirmButton, styles.promoteColor, { marginRight: 8 }]}
+              onPress={() => {
+                setShowMemberOptions(false);
+                if (memberOptionUser) {
+                  openActionModal(memberOptionUser, "promote");
+                }
+              }}
+            >
+              <Text style={styles.confirmButtonText}>Promote</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.confirmButton, { backgroundColor: "#f43f5e" }]}
+              onPress={() => {
+                setShowMemberOptions(false);
+                if (memberOptionUser) {
+                  openActionModal(memberOptionUser, "kick");
+                }
+              }}
+            >
+              <Text style={styles.confirmButtonText}>Kick</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => setShowMemberOptions(false)}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+
       </View>
     </Modal>
     </>
@@ -467,6 +569,56 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 }
 
 const styles = StyleSheet.create({
+  modalTitle: {
+  fontSize: 18,
+  fontWeight: "600",
+  color: "#1f2937",
+  textAlign: "center",
+  marginBottom: 20,
+},
+
+modalSubtext: {
+  fontSize: 14,
+  color: "#6b7280",
+  textAlign: "center",
+  marginBottom: 20,
+},
+
+modalButtons: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  width: "100%",
+  gap: 12, // cleaner spacing than marginRight hacks
+},
+
+confirmButton: {
+  flex: 1,
+  paddingVertical: 14,
+  borderRadius: 10,
+  alignItems: "center",
+},
+
+cancelButton: {
+  backgroundColor: "#f3f4f6",
+  paddingVertical: 14,
+  borderRadius: 10,
+  width: "100%",
+  alignItems: "center",
+  marginTop: 16,
+},
+  modalContainer: {
+  width: "90%",
+  backgroundColor: "#fff",
+  paddingVertical: 28,
+  paddingHorizontal: 20,
+  borderRadius: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
+  elevation: 5,
+  alignItems: "center",
+},
   container: { backgroundColor: "#fafafa", flex: 1 },
   groupTitle: {
     fontSize: 28,
@@ -613,62 +765,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  modalContainer: {
-    width: "85%",
-    backgroundColor: "#fff",
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 5,
-    alignItems: "center",
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1f2937",
-    textAlign: "center",
-  },
-
-  modalSubtext: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginTop: 6,
-    marginBottom: 24,
-    textAlign: "center",
-  },
-
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 10,
-    marginRight: 10,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 8,
-    alignItems: "center",
-  },
-
   cancelButtonText: {
     color: "#374151",
     fontWeight: "500",
   },
-
-  confirmButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-
   promoteColor: {
     backgroundColor: "#7c3aed",
   },
@@ -726,5 +826,5 @@ founderCloseText: {
   fontSize: 20,
   color: "#fbbf24",
   fontWeight: "bold",
-},
+}
 });

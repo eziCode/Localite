@@ -1,3 +1,5 @@
+import { hasInappropriateLanguage } from "@/lib/helper_functions/hasInappropriateLanguage";
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import React, { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../lib/supabase";
@@ -22,9 +24,12 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
     );
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!groupName.trim()) {
       return setError("Group name is required");
+    }
+    if (await hasInappropriateLanguage(groupName)) {
+      return setError("Group name contains inappropriate language");
     }
     if (groupName.length < 3) {
       return setError("Group name must be at least 3 characters");
@@ -37,6 +42,20 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
     }
 
     const fetchUser = async () => {
+      const { data: existingGroups, error: fetchExistingGroupsError } = await supabase
+        .from("groups")
+        .select("id")
+        .eq("name", groupName.trim())
+        .neq("visibility", "hidden");
+      
+      if (fetchExistingGroupsError) {
+        console.error(fetchExistingGroupsError);
+        return setError("Failed to check existing groups. Try again.");
+      }
+      if (existingGroups.length > 0) {
+        return setError("A group with this name already exists.");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return setError("You must be logged in to create a group.");
@@ -47,7 +66,6 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         .insert({
           name: groupName,
           description,
-          join_code: null,
           creator_id: user.id,
           members: [user.id],
           vibes: selectedVibes,
@@ -61,6 +79,19 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         return setError("Failed to create group. Try again.");
       }
 
+      const { data: group, error: groupError } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("name", groupName)
+        .eq("creator_id", user.id)
+        .single();
+      
+      if (groupError) {
+        console.error(groupError);
+        return setError("Failed to retrieve created group. Try again.");
+      }
+
+      uploadUserInteraction(user.id, group.id as number, "created_group", "group");
       onGroupCreated();
       onClose();
     };

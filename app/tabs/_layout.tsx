@@ -30,6 +30,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="explore"
         options={{
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="compass-outline" color={color} size={size} />
           ),

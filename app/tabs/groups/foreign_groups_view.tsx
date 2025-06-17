@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import type { PublicUser } from "@/types/public_user";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -190,12 +191,13 @@ export default function ForeignGroupsView() {
           {founderUser && founderUser.user_id !== user.id && (
   <View style={styles.founderContainer}>
     <TouchableOpacity
-      onPress={() =>
+      onPress={() => {
         router.push({
           pathname: "/tabs/groups/inspect_user",
           params: { userToInspectId: founderUser.user_id },
-        })
-      }
+        });
+        uploadUserInteraction(user.id, founderUser.id, "viewed_user_profile", "user");
+      }}
       style={{ flex: 1 }}
       activeOpacity={0.7}
     >
@@ -213,7 +215,10 @@ export default function ForeignGroupsView() {
     <View style={styles.sectionWithArrow}>
       <Text style={styles.sectionHeader}>Leaders</Text>
       {leadersCount > 5 && (
-        <TouchableOpacity onPress={() => {router.push("/tabs/groups/group_people_list")}} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={() => {router.push({
+          pathname: "/tabs/groups/group_people_list",
+          params: { groupId: group.id, whoToFetch: "leaders", userDoingInspect: user.id },
+        })}} style={styles.moreArrow}>
           <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
         </TouchableOpacity>
       )}
@@ -222,12 +227,13 @@ export default function ForeignGroupsView() {
       leader.user_id !== user.id ? (
         <TouchableOpacity
           key={leader.id}
-          onPress={() =>
+          onPress={() => {
             router.push({
               pathname: "/tabs/groups/inspect_user",
               params: { userToInspectId: leader.user_id },
-            })
-          }
+            });
+            uploadUserInteraction(user.id, leader.id, "viewed_user_profile", "user");
+          }}
           style={{ flex: 1 }}
           activeOpacity={0.7}
         >
@@ -252,7 +258,10 @@ export default function ForeignGroupsView() {
     <View style={styles.sectionWithArrow}>
       <Text style={styles.sectionHeader}>Members</Text>
       {membersCount > 5 && (
-        <TouchableOpacity onPress={() => {router.push("/tabs/groups/group_people_list")}} style={{ padding: 8 }}>
+        <TouchableOpacity onPress={() => {router.push({
+          pathname: "/tabs/groups/group_people_list",
+          params: { groupId: group.id, whoToFetch: "members", userDoingInspect: user.id },
+        })}} style={styles.moreArrow}>
           <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
         </TouchableOpacity>
       )}
@@ -261,12 +270,13 @@ export default function ForeignGroupsView() {
       member.user_id !== user.id ? (
         <TouchableOpacity
           key={member.id}
-          onPress={() =>
+          onPress={() => {
             router.push({
               pathname: "/tabs/groups/inspect_user",
               params: { userToInspectId: member.user_id },
             })
-          }
+            uploadUserInteraction(user.id, member.id, "viewed_user_profile", "user");
+          }}
           style={{ flex: 1 }}
           activeOpacity={0.7}
         >
@@ -311,6 +321,7 @@ export default function ForeignGroupsView() {
         style={styles.modalButton}
         onPress={() => {
           setShowRequestSentModal(false);
+          uploadUserInteraction(user.id, group.id, "requested_to_join_group", "group");
           router.back();
         }}
       >
@@ -562,4 +573,7 @@ founderContainer: {
   borderLeftColor: "#fbbf24",
   borderLeftWidth: 4,
 },
+moreArrow: {
+    padding: 8,
+    },
 });

@@ -1,5 +1,5 @@
 export type Group = {
-  id: string;
+  id: number;
   created_at: string;
   name: string;
   description?: string;

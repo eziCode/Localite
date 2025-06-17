@@ -10,4 +10,6 @@ export type UserEvent = {
     event_invite_code: string;
     post_only_to_group: boolean;
     location_name: string;
+    latitude: number;
+    longitude: number;
 };
