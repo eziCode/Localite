@@ -91,10 +91,38 @@ serve(async (req) => {
         event.latitude,
         event.longitude
       );
+
       // User part of the group hosting the event
+      const { data: groupHostingEvent, error: groupError } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("id", event.group_id)
+        .single();
+      if (groupError) {
+        console.error("Error fetching group for event:", groupError);
+        return null; // Skip this event if group fetch fails
+      }
+      const isUserInGroup = groupHostingEvent?.members?.includes(user_id) || false;
 
       // User interacted with user who created the event
+      const { data: organizerUser, error: organizerError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_id", event.organizer_id)
+        .single();
+      if (organizerError) {
+        console.error("Error fetching organizer user for event:", organizerError);
+        return null; // Skip this event if organizer user fetch fails
+      }
+      const hasInteractedWithOrganizer = interactions.some(
+        (interaction) => interaction.target_id === organizerUser.id
+      );
+
       // User interacted with person/people in group hosting the event
+      const numberOfInteractedWithGroupMembers = groupHostingEvent?.members?.filter(
+        (memberId) => interactions.some((interaction) => interaction.target_id === memberId)
+      ).length || 0;
+
       // Event recency
       // Upvotes/popularity of the event
       // Age bracket match quality (small bonus if user is in midrange of min_age and max_age)

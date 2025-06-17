@@ -2,7 +2,7 @@ import { supabase } from '../supabase';
 
 export async function uploadUserInteraction(
   userDoingAction: string,
-  itemOnRecievingEndOfAction: number,
+  itemOnRecievingEndOfAction: string,
   interactionType: string,
   targetType: string
 ) {
