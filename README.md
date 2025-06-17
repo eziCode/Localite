@@ -1,31 +1,31 @@
 # Localite 📍🎉
 
-**Localite** is a mobile app designed to help users discover vibrant, relevant, and nearby events—filtered intelligently based on location, age, interests, and group affiliations. Built with React Native, Supabase, and Expo, Localite combines a beautiful user experience with efficient, real-time backend logic.
+**Localite** is a mobile app designed to help users discover vibrant, relevant, and nearby events—filtered intelligently based on location, age, interests, and group affiliations. Built with **React Native**, **Supabase**, and **Expo**, Localite delivers a seamless, engaging experience backed by efficient real-time backend logic.
 
 ---
 
 ## 🚀 Features
 
 - 🌍 **Location-Based Recommendations**  
-  Suggests upcoming events nearby using GPS and personalized filtering.
+  Discover upcoming events nearby using GPS and personalized filtering.
 
 - 🧠 **Smart Ranking Engine**  
-  Edge function ranks events by location, timing, and user demographic (e.g., age).
+  Edge Function ranks events by location, timing, and age demographics.
 
 - 👥 **Group System**  
-  Users can create, join, and manage groups. Events can be shared publicly or restricted to groups.
+  Create, join, and manage groups. Share events publicly or restrict them to specific groups.
 
-- 📆 **Event Posting & Calendar Integration**  
-  Users can post events with start/end times, vibe tags, and custom locations.
+- 📆 **Event Creation & Calendar View**  
+  Post events with timing, vibe tags, and locations. Explore via calendar UI.
 
 - 📸 **Profile Customization**  
-  Circular profile image cropping and secure uploads with Supabase storage.
+  Crop profile images in a circular format and store them securely with Supabase.
 
 - 🔒 **Secure Auth & Deep Linking**  
-  Supabase Auth integration with email/password login and password reset flows.
+  Supabase Auth for login, password reset, and deep link redirection.
 
 - 🔄 **Efficient Pagination**  
-  Optimized frontend/backend pagination via offset-based loading.
+  Offset-based backend pagination for smooth event loading.
 
 ---
 
@@ -53,38 +53,86 @@ localite/
 ├── supabase/
 │   └── functions/
 │       └── rank_events/       # Edge function for event ranking
+```
+
+---
 
 ## ⚙️ Getting Started
+
 Follow these steps to get Localite running locally:
 
-1. 🚀 Clone the Repository
+### 1. 🚀 Clone the Repository
+
+```bash
 git clone https://github.com/yourname/localite.git
 cd localite
+```
 
-2. 📦 Install Dependencies
+### 2. 📦 Install Dependencies
+
+```bash
 npm install
+```
 
-3. 📱 Start the App
+### 3. 📱 Start the App
+
+```bash
 npx expo start
+```
 
-4. ⚡ Deploy Edge Functions
-Navigate to the supabase/functions directory and deploy the event ranking function:
+### 4. 🔐 Environment Configuration
+
+Create a `.env` file in the root of your project and add your Supabase credentials:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+Alternatively, configure these directly inside `lib/supabase.ts`.
+
+### 5. ⚡ Deploy Edge Function
+
+Navigate to the Supabase functions directory and deploy the ranking function:
+
+```bash
+cd supabase/functions
 supabase functions deploy rank_events
+```
 
-👨‍💻 Authors
-Ezra Akresh & Anshdeep Singh
-Special thanks to the open-source community and Supabase team for tools, inspiration, and support.
+---
 
-📄 License
+## 📌 Roadmap
+
+- [ ] Interest-based recommendation engine
+- [ ] In-app chat for event discussions
+- [ ] RSVP system
+- [ ] Push notifications for new or nearby events
+
+---
+
+## 👨‍💻 Authors
+
+- **Ezra Akresh**
+- **Anshdeep Singh**
+
+Special thanks to the open-source community and the Supabase team for tools, inspiration, and support.
+
+---
+
+## 📄 License
+
 This project is licensed under the MIT License.
-You are free to use, copy, modify, merge, publish, and distribute this software with attribution.
 
+You are free to use, copy, modify, merge, publish, and distribute this software with proper attribution.
+
+```
 MIT License
 
 Copyright (c) 2025 Ezra Akresh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
+of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights to
 use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
 of the Software, and to permit persons to whom the Software is furnished to do so,
@@ -92,3 +140,12 @@ subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
