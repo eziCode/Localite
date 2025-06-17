@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { UserEvent } from "@/types/user_event";
 import * as Location from "expo-location";
 import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -32,7 +32,6 @@ export default function Explore() {
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -59,13 +58,13 @@ export default function Explore() {
 
   useEffect(() => {
     if (user && userCoords) {
-      fetchRankedEvents(1);
+      fetchRankedEvents(0);
     }
   }, [user, userCoords]);
 
-  const fetchRankedEvents = async (pageToLoad: number) => {
+  const fetchRankedEvents = async (offsetToUse: number) => {
     if (!user || !userCoords) return;
-    if (pageToLoad === 1) setLoading(true);
+    if (offsetToUse === 0) setLoading(true);
     else setLoadingMore(true);
 
     try {
@@ -80,28 +79,24 @@ export default function Explore() {
           userLatitude: userCoords.latitude,
           userLongitude: userCoords.longitude,
           userAge: user.user_metadata?.age,
-          page: pageToLoad,
+          offset: offsetToUse,
           pageSize: PAGE_SIZE,
         }),
       });
 
       if (response.status === 200) {
-        const { events: newEvents, has_more, next_page } = await response.json() as {
+        const { events: newEvents, has_more } = await response.json() as {
           events: UserEvent[],
           has_more: boolean,
-          next_page: number | null
         };
 
-        if (pageToLoad === 1) {
+        if (offsetToUse === 0) {
           setEvents(newEvents);
         } else {
           setEvents(prev => [...prev, ...newEvents]);
         }
 
         setHasMore(has_more);
-        if (next_page != null) {
-          setPage(next_page);
-        }
       } else {
         const error = await response.json();
         console.error(`Error ${response.status}:`, error);
@@ -114,11 +109,11 @@ export default function Explore() {
     setLoadingMore(false);
   };
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (!loadingMore && hasMore) {
-      fetchRankedEvents(page + 1);
+      fetchRankedEvents(events.length);
     }
-  };
+  }, [loadingMore, hasMore, events.length]);
 
   const renderEvent = ({ item }: { item: UserEvent }) => {
     let distanceText = "";
