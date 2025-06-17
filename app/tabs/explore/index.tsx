@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (value: number) => (value * Math.PI) / 180;
-  const R = 3958.8; // Radius of the earth in miles
+  const R = 3958.8;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
@@ -26,73 +26,92 @@ function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, 
   return R * c;
 }
 
+const PAGE_SIZE = 25;
+
 export default function Explore() {
   const [events, setEvents] = useState<UserEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
-  
-  useEffect(() => {
-    const fetchRankedEvents = async () => {
-      setLoading(true);
+  const [hasMore, setHasMore] = useState(true);
 
+  useEffect(() => {
+    const initialize = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!user) return;
 
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         console.error("Permission to access location was denied");
-        setLoading(false);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       setUserCoords({ latitude, longitude });
+    };
 
+    initialize();
+  }, []);
+
+  useEffect(() => {
+    if (user && userCoords) {
+      fetchRankedEvents(1);
+    }
+  }, [user, userCoords]);
+
+  const fetchRankedEvents = async (pageToLoad: number) => {
+    if (!user || !userCoords) return;
+    if (pageToLoad === 1) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
       const response = await fetch("https://axdnmsjjofythsclelgu.functions.supabase.co/rank_events", {
         method: "POST",
         headers: {
           Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4ZG5tc2pqb2Z5dGhzY2xlbGd1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA1Mjg4MSwiZXhwIjoyMDY0NjI4ODgxfQ.BVL_pmvhI_f6W_c8iXN6dSxOyPL5yzru5m_dCxg2JmE`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          user_id: user.id, 
-          userLatitude: latitude, 
-          userLongitude: longitude,
+        body: JSON.stringify({
+          user_id: user.id,
+          userLatitude: userCoords.latitude,
+          userLongitude: userCoords.longitude,
           userAge: user.user_metadata?.age,
+          page: pageToLoad,
+          pageSize: PAGE_SIZE,
         }),
       });
 
-      switch (response.status) {
-        case 200: {
-          const events = await response.json() as UserEvent[];
-          setEvents(events || []);
-          break;
+      if (response.status === 200) {
+        const { events: newEvents, has_more } = await response.json() as { events: UserEvent[], has_more: boolean };
+        if (pageToLoad === 1) {
+          setEvents(newEvents);
+        } else {
+          setEvents(prev => [...prev, ...newEvents]);
         }
-        case 400: {
-          const error = await response.json();
-          console.error("Bad Request:", error);
-          break;
-        }
-        case 500: {
-          const error = await response.json();
-          console.error("Server Error:", error);
-          break;
-        }
-        default: {
-          console.error("Unexpected response status:", response.status);
-        }
+
+        setHasMore(has_more);
+        setPage(pageToLoad);
+      } else {
+        const error = await response.json();
+        console.error(`Error ${response.status}:`, error);
       }
-      setLoading(false);
-    };
-    fetchRankedEvents();
-  }, []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+
+    setLoading(false);
+    setLoadingMore(false);
+  };
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchRankedEvents(page + 1);
+    }
+  };
 
   const renderEvent = ({ item }: { item: UserEvent }) => {
     let distanceText = "";
@@ -146,6 +165,15 @@ export default function Explore() {
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderEvent}
               contentContainerStyle={styles.listContent}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                loadingMore ? (
+                  <ActivityIndicator size="small" color="#999" style={{ marginVertical: 16 }} />
+                ) : !hasMore ? (
+                  <Text style={styles.text}>You&apos;ve reached the end.</Text>
+                ) : null
+              }
             />
           )}
         </View>
