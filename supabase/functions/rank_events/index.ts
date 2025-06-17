@@ -3,6 +3,26 @@ import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 // eslint-disable-next-line import/no-unresolved
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+function getDistanceFromLatLonInMiles(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const R = 3958.8; // Radius of the Earth in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 serve(async (req) => {
   const supabase = createClient(
     "https://axdnmsjjofythsclelgu.supabase.co",
@@ -61,6 +81,28 @@ serve(async (req) => {
       (userAge >= e.min_age) &&
       (userAge <= e.max_age)
     );
+
+    const scoredEvents = filtered.map((event) => {
+      // Score each event based on a few factors:
+      // Distance from user
+      const distance = getDistanceFromLatLonInMiles(
+        userLatitude,
+        userLongitude,
+        event.latitude,
+        event.longitude
+      );
+      // User part of the group hosting the event
+
+      // User interacted with user who created the event
+      // User interacted with person/people in group hosting the event
+      // Event recency
+      // Upvotes/popularity of the event
+      // Age bracket match quality (small bonus if user is in midrange of min_age and max_age)
+      // Event repeat attendance (if user has attended before, give a bonus)
+      // Penalize events that conflict with those already on user's calendar
+      // LLM-based similarity score based on event description and user interests
+      // Social hints (e.g., friends attending, mutual connections)
+    });
 
     collectedEvents.push(...filtered);
 
