@@ -122,7 +122,7 @@ const GroupPeopleList = () => {
                 pathname: "/tabs/groups/inspect_user",
                 params: { userToInspectId: item.user_id },
               });
-              uploadUserInteraction(userDoingInspectionId, item.id, "viewed profile of another user", "user");
+              uploadUserInteraction(userDoingInspectionId, item.id, "viewed_user_profile", "user");
             }}
           >
             <Image

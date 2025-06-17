@@ -1,3 +1,4 @@
+import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import { PublicUser } from "@/types/public_user";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
@@ -230,6 +231,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                     pathname: "/tabs/groups/inspect_user",
                     params: { userToInspectId: founderUser.user_id },
                   });
+                  uploadUserInteraction(user.id, founderUser.id, "viewed_user_profile", "user");
                 }
               }}
             >
@@ -267,13 +269,13 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                 disabled={leader.user_id === user.id}
                 onPress={() => {
                   if (leader.user_id !== user.id) {
-                    console.log("Inspecting user:", leader.user_id);
                     router.push({
                       pathname: "/tabs/groups/inspect_user",
                       params: {
                         userToInspectId: leader.user_id 
                       },
                     });
+                    uploadUserInteraction(user.id, leader.id, "viewed_user_profile", "user");
                   }
                 }}
                 onLongPress={
@@ -320,6 +322,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                       pathname: "/tabs/groups/inspect_user",
                       params: { userToInspectId: member.user_id },
                     });
+                    uploadUserInteraction(user.id, member.id, "viewed_user_profile", "user");
                   }
                 }}
                 onLongPress={

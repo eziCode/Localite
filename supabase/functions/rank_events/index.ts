@@ -24,6 +24,15 @@ serve(async (req) => {
     });
   }
 
+  const { data: interactions, error: interactionError } = await supabase
+    .from("user_interactions")
+    .select("*")
+    .eq("user_id", user_id);
+  
+  if (interactionError) {
+    return new Response(JSON.stringify({ error: interactionError.message }), { status: 500 });
+  }
+
   const collectedEvents: any[] = [];
   let moreToFetch = true;
   let absoluteOffset = offset;
