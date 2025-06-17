@@ -30,42 +30,54 @@ const PAGE_SIZE = 25;
 
 export default function Explore() {
   const [events, setEvents] = useState<UserEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [absoluteOffset, setAbsoluteOffset] = useState<number | null>(0);
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         console.error("Permission to access location was denied");
+        setLoading(false);
         return;
       }
 
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       setUserCoords({ latitude, longitude });
+      setLoading(false);
     };
 
     initialize();
   }, []);
 
   useEffect(() => {
-    if (user && userCoords) {
-      fetchRankedEvents(0);
+    if (absoluteOffset !== null && user && userCoords) {
+      fetchRankedEvents(absoluteOffset, absoluteOffset === 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, userCoords]);
 
-  const fetchRankedEvents = async (offsetToUse: number) => {
+  const fetchRankedEvents = async (offsetToUse: number, isInitial = false) => {
     if (!user || !userCoords) return;
-    if (offsetToUse === 0) setLoading(true);
-    else setLoadingMore(true);
+
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
 
     try {
       const response = await fetch("https://axdnmsjjofythsclelgu.functions.supabase.co/rank_events", {
@@ -85,10 +97,12 @@ export default function Explore() {
       });
 
       if (response.status === 200) {
-        const { events: newEvents, has_more } = await response.json() as {
+        const { events: newEvents, has_more, next_offset } = await response.json() as {
           events: UserEvent[],
           has_more: boolean,
+          next_offset: number | null,
         };
+        console.log(`Fetched ${newEvents.length} events, has_more: ${has_more}, next_offset: ${next_offset}`);
 
         if (offsetToUse === 0) {
           setEvents(newEvents);
@@ -97,23 +111,27 @@ export default function Explore() {
         }
 
         setHasMore(has_more);
+        setAbsoluteOffset(next_offset);
       } else {
         const error = await response.json();
         console.error(`Error ${response.status}:`, error);
       }
     } catch (err) {
       console.error("Fetch error:", err);
+    } finally {
+      if (isInitial) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
-
-    setLoading(false);
-    setLoadingMore(false);
   };
 
   const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      fetchRankedEvents(events.length);
+    if (!loadingMore && hasMore && absoluteOffset !== null) {
+      fetchRankedEvents(absoluteOffset, false);
     }
-  }, [loadingMore, hasMore, events.length]);
+  }, [loadingMore, hasMore, absoluteOffset]);
 
   const renderEvent = ({ item }: { item: UserEvent }) => {
     let distanceText = "";
