@@ -125,7 +125,13 @@ const ShowAllGroups = () => {
           data={groupsToDisplay}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => handleNavigate(item)}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.card,
+                pressed && { backgroundColor: "#ece6fa" }
+              ]}
+              onPress={() => handleNavigate(item)}
+            >
               <Text style={styles.groupName}>{item.name}</Text>
               <Text style={styles.groupDesc} numberOfLines={1}>{item.description || 'No description'}</Text>
             </Pressable>
