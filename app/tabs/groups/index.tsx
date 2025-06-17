@@ -18,6 +18,8 @@ import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
 import CreateGroupModal from "../../modals/create_group";
 
+const MAX_GROUPS_TO_SHOW = 5;
+
 export default function GroupsPage() {
   const router = useRouter();
   const [userGroups, setUserGroups] = useState<Group[]>([]);
@@ -36,8 +38,7 @@ export default function GroupsPage() {
       .from("groups")
       .select("*")
       .filter("members", "cs", JSON.stringify([userId]))
-      .order("id", { ascending: false })
-      .limit(10);
+      .limit(MAX_GROUPS_TO_SHOW + 1); // Fetch one extra to check if more exist
 
     if (error) console.error(error);
     else setUserGroups(data);
@@ -50,7 +51,8 @@ export default function GroupsPage() {
     const { data: requests, error: requestError } = await supabase
       .from("group_join_requests")
       .select("group_id, status, created_at")
-      .eq("from_id", userId);
+      .eq("from_id", userId)
+      .limit(MAX_GROUPS_TO_SHOW + 1);
 
     if (requestError) {
       console.error("Error fetching join requests:", requestError);
@@ -247,12 +249,30 @@ export default function GroupsPage() {
         </TouchableOpacity>
 
         <ScrollView style={styles.container}>
-          <Text style={styles.title}>Your Groups</Text>
+          {/* Your Groups Section */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={styles.title}>Your Groups</Text>
+            {userGroups.length > MAX_GROUPS_TO_SHOW && (
+              <TouchableOpacity
+                onPress={() => {
+                    router.push({ 
+                      pathname: "/tabs/groups/show_all_groups",
+                      params: { groupsAlreadyFetched: JSON.stringify(userGroups), user: JSON.stringify(user), type: "user" } 
+                    });
+                  }}
+                style={{ padding: 4 }}
+                hitSlop={8}
+              >
+                <Ionicons name="chevron-forward" size={24} color="#7c5e99" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {/* Only show up to MAX_GROUPS_TO_SHOW */}
           {userGroups.length === 0 ? (
             <Text style={styles.subText}>No groups yet.</Text>
           ) : (
             <FlatList
-              data={userGroups}
+              data={userGroups.slice(0, MAX_GROUPS_TO_SHOW)}
               keyExtractor={(item) => item.id.toString()}
               scrollEnabled={false}
               renderItem={({ item }) => (
@@ -278,12 +298,30 @@ export default function GroupsPage() {
             <Text style={styles.createButtonText}>+ Create New Group</Text>
           </TouchableOpacity>
 
-          <Text style={styles.title}>Suggested Groups</Text>
+          {/* Suggested Groups Section */}
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={styles.title}>Suggested Groups</Text>
+            {suggestedGroups.length > MAX_GROUPS_TO_SHOW && (
+              <TouchableOpacity
+                onPress={() => {
+                    router.push({ 
+                      pathname: "/tabs/groups/show_all_groups",
+                      params: { groupsAlreadyFetched: JSON.stringify(suggestedGroups), user: JSON.stringify(user), type: "suggested" } 
+                    });
+                  }}
+                style={{ padding: 4 }}
+                hitSlop={8}
+              >
+                <Ionicons name="chevron-forward" size={24} color="#7c5e99" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {/* Only show up to MAX_GROUPS_TO_SHOW */}
           {suggestedGroups.length === 0 ? (
             <Text style={styles.subText}>No suggested groups at this time.</Text>
           ) : (
             <FlatList
-              data={suggestedGroups}
+              data={suggestedGroups.slice(0, MAX_GROUPS_TO_SHOW)}
               keyExtractor={(item) => item.id.toString()}
               scrollEnabled={false}
               renderItem={({ item }) => (
