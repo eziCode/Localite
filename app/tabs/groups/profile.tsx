@@ -189,7 +189,10 @@ export default function UserProfile() {
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
-                router.push("/tabs/groups/show_all_user_groups")
+                router.push({ 
+                  pathname: "/tabs/groups/show_all_groups",
+                  params: { groupsAlreadyFetched: JSON.stringify(groups), user: JSON.stringify(user), type: "user" } 
+                });
               }}
             >
               <Text style={styles.groupSummary}>

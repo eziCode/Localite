@@ -1,5 +1,5 @@
 export type UserEvent = {
-    id: number;
+    id: string;
     created_at: string;
     title: string;
     description?: string;
@@ -12,4 +12,5 @@ export type UserEvent = {
     location_name: string;
     latitude: number;
     longitude: number;
+    upvotes: number;
 };

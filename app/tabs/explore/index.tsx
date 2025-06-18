@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { UserEvent } from "@/types/user_event";
 import * as Location from "expo-location";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -102,7 +102,6 @@ export default function Explore() {
           has_more: boolean,
           next_offset: number | null,
         };
-        console.log(`Fetched ${newEvents.length} events, has_more: ${has_more}, next_offset: ${next_offset}`);
 
         if (offsetToUse === 0) {
           setEvents(newEvents);
@@ -153,7 +152,15 @@ export default function Explore() {
     return (
       <Pressable
         style={styles.card}
-        onPress={() => console.log("Clicked event:", item.title)}
+        onPress={() => {
+          router.push({
+            pathname: "/(shared)/inspect_event",
+            params: {
+              user: JSON.stringify(user),
+              event: JSON.stringify(item),
+            },
+          })
+        }}
       >
         <View style={styles.accent} />
         <View style={styles.cardContent}>

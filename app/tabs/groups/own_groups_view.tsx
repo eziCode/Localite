@@ -231,7 +231,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                     pathname: "/tabs/groups/inspect_user",
                     params: { userToInspectId: founderUser.user_id },
                   });
-                  uploadUserInteraction(user.id, founderUser.id, "viewed_user_profile", "user");
+                  uploadUserInteraction(user.id, founderUser.user_id, "viewed_user_profile", "user");
                 }
               }}
             >
@@ -275,7 +275,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                         userToInspectId: leader.user_id 
                       },
                     });
-                    uploadUserInteraction(user.id, leader.id, "viewed_user_profile", "user");
+                    uploadUserInteraction(user.id, leader.user_id, "viewed_user_profile", "user");
                   }
                 }}
                 onLongPress={
@@ -322,7 +322,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                       pathname: "/tabs/groups/inspect_user",
                       params: { userToInspectId: member.user_id },
                     });
-                    uploadUserInteraction(user.id, member.id, "viewed_user_profile", "user");
+                    uploadUserInteraction(user.id, member.user_id, "viewed_user_profile", "user");
                   }
                 }}
                 onLongPress={
@@ -425,7 +425,20 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               .slice()
               .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
               .map((event) => (
-                <View key={event.id} style={styles.eventCard}>
+                <TouchableOpacity
+                  key={event.id}
+                  style={styles.eventCard}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/(shared)/inspect_event",
+                      params: {
+                        event: JSON.stringify(event),
+                        user: JSON.stringify(user),
+                      },
+                    });
+                    uploadUserInteraction(user.id, event.id, "viewed_event", "event");
+                  }}
+                >
                   <Text style={styles.eventTitle}>{event.title}</Text>
                   <Text style={styles.eventTime}>
                     {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -435,7 +448,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                   {event.location_name && (
                     <Text style={styles.eventLocation}>{event.location_name}</Text>
                   )}
-                </View>
+                </TouchableOpacity>
               ))
           ) : (
             <Text style={styles.placeholderText}>No events on this day.</Text>

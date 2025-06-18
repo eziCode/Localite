@@ -196,7 +196,7 @@ export default function ForeignGroupsView() {
           pathname: "/tabs/groups/inspect_user",
           params: { userToInspectId: founderUser.user_id },
         });
-        uploadUserInteraction(user.id, founderUser.id, "viewed_user_profile", "user");
+        uploadUserInteraction(user.id, founderUser.user_id, "viewed_user_profile", "user");
       }}
       style={{ flex: 1 }}
       activeOpacity={0.7}
@@ -232,7 +232,7 @@ export default function ForeignGroupsView() {
               pathname: "/tabs/groups/inspect_user",
               params: { userToInspectId: leader.user_id },
             });
-            uploadUserInteraction(user.id, leader.id, "viewed_user_profile", "user");
+            uploadUserInteraction(user.id, leader.user_id, "viewed_user_profile", "user");
           }}
           style={{ flex: 1 }}
           activeOpacity={0.7}
@@ -275,7 +275,7 @@ export default function ForeignGroupsView() {
               pathname: "/tabs/groups/inspect_user",
               params: { userToInspectId: member.user_id },
             })
-            uploadUserInteraction(user.id, member.id, "viewed_user_profile", "user");
+            uploadUserInteraction(user.id, member.user_id, "viewed_user_profile", "user");
           }}
           style={{ flex: 1 }}
           activeOpacity={0.7}
