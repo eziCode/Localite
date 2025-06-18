@@ -202,22 +202,6 @@ export default function OwnGroupsView() {
   // Helper to check if current user is founder or leader
   const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 
-  // Member row component for consistency
-  const MemberRow = ({ name, badge, profile_picture_url }: { name: string; badge?: string; profile_picture_url?: string }) => (
-    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
-      {profile_picture_url ? (
-        <Image
-          source={{ uri: profile_picture_url }}
-          style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12, backgroundColor: "#e4e4e7" }}
-        />
-      ) : (
-        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#e4e4e7", marginRight: 12 }} />
-      )}
-      <Text style={{ fontSize: 16, color: "#1e1e1f", flex: 1 }}>{name}</Text>
-      {badge && <Text style={{ fontSize: 12, color: "#f59e0b", fontWeight: "600", marginLeft: 8 }}>{badge}</Text>}
-    </View>
-  );
-
   return (
     <View style={{ flex: 1, backgroundColor: "#fdfdfd" }}>
       {/* Fixed Header */}
@@ -272,11 +256,18 @@ export default function OwnGroupsView() {
               activeOpacity={0.7}
               disabled={founderUser.user_id === user.id}
             >
-              <MemberRow
-                name={founderUser.user_name}
-                badge="Founder 👑"
-                profile_picture_url={founderUser.profile_picture_url}
-              />
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
+                {founderUser.profile_picture_url ? (
+                  <Image
+                    source={{ uri: founderUser.profile_picture_url }}
+                    style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12, backgroundColor: "#e4e4e7" }}
+                  />
+                ) : (
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#e4e4e7", marginRight: 12 }} />
+                )}
+                <Text style={{ fontSize: 16, color: "#1e1e1f", flex: 1 }}>{founderUser.user_name}</Text>
+                <Text style={{ fontSize: 12, color: "#f59e0b", fontWeight: "600", marginLeft: 8 }}>Founder 👑</Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -315,10 +306,17 @@ export default function OwnGroupsView() {
                 activeOpacity={0.7}
                 disabled={leader.user_id === user.id}
               >
-                <MemberRow
-                  name={leader.user_name}
-                  profile_picture_url={leader.profile_picture_url}
-                />
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
+                  {leader.profile_picture_url ? (
+                    <Image
+                      source={{ uri: leader.profile_picture_url }}
+                      style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12, backgroundColor: "#e4e4e7" }}
+                    />
+                  ) : (
+                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#e4e4e7", marginRight: 12 }} />
+                  )}
+                  <Text style={{ fontSize: 16, color: "#1e1e1f", flex: 1 }}>{leader.user_name}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -365,10 +363,17 @@ export default function OwnGroupsView() {
                 activeOpacity={0.7}
                 disabled={member.user_id === user.id}
               >
-                <MemberRow
-                  name={member.user_name}
-                  profile_picture_url={member.profile_picture_url}
-                />
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
+                  {member.profile_picture_url ? (
+                    <Image
+                      source={{ uri: member.profile_picture_url }}
+                      style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12, backgroundColor: "#e4e4e7" }}
+                    />
+                  ) : (
+                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#e4e4e7", marginRight: 12 }} />
+                  )}
+                  <Text style={{ fontSize: 16, color: "#1e1e1f", flex: 1 }}>{member.user_name}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>

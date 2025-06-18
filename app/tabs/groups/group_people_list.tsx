@@ -16,7 +16,6 @@ import {
 import { supabase } from '../../../lib/supabase';
 
 const PAGE_SIZE = 20;
-
 const ITEM_WIDTH = Dimensions.get('window').width / 4;
 
 const GroupPeopleList = () => {
@@ -36,9 +35,8 @@ const GroupPeopleList = () => {
   const fetchUsers = useCallback(async (pageIndex = 0) => {
     if (!hasMore && pageIndex > 0) return;
     setIsLoading(true);
-    
-    // Fetch groupData
-    const {data: groupData, error: groupError} = await supabase
+
+    const { data: groupData, error: groupError } = await supabase
       .from('groups')
       .select('members, leaders, founder')
       .eq('id', groupId)
@@ -62,15 +60,14 @@ const GroupPeopleList = () => {
       return;
     }
 
-    // Sort or keep as-is
     const offset = pageIndex * PAGE_SIZE;
     const limit = PAGE_SIZE;
 
-    const {data: batchData, error: dataError, count} = await supabase
+    const { data: batchData, error: dataError, count } = await supabase
       .from('users')
-      .select('*', {count: 'exact'})
+      .select('*', { count: 'exact' })
       .in('user_id', ids)
-      .order('user_name', {ascending: true})
+      .order('user_name', { ascending: true })
       .range(offset, offset + limit - 1);
 
     if (dataError) {
@@ -98,17 +95,17 @@ const GroupPeopleList = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, whoToFetch, isFocused]);
 
-
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
           {whoToFetch === 'leaders' ? 'Leaders' : 'Members'}
         </Text>
-          </View>
+        <View style={{ width: 60 }} />
+      </View>
       <FlatList
         data={users}
         keyExtractor={item => item.user_id}
@@ -140,52 +137,46 @@ const GroupPeopleList = () => {
           }
         }}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={isLoading ? <Text style={styles.loading}>Loading...</Text> : null}
+        ListFooterComponent={isLoading ? <Text style={styles.loading}>Loading more...</Text> : null}
       />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: "#fafafa",
-  },
-  backButtonText: {
-    fontSize: 18,
-    color: "#7c3aed",
-  },
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fafafa',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 8,
-    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
     justifyContent: 'space-between',
   },
   backButton: {
-    paddingVertical: 6,
+    paddingVertical: 4,
     paddingHorizontal: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#7c5e99',
+    fontWeight: '500',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
     textAlign: 'center',
-    flex: 1,
   },
   listContent: {
     paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: 32,
+    paddingHorizontal: 8,
   },
   userItem: {
     width: ITEM_WIDTH,
@@ -196,13 +187,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#ddd',
+    backgroundColor: '#e0e0e0',
     marginBottom: 6,
   },
   userName: {
     fontSize: 13,
     textAlign: 'center',
-    color: '#333',
+    color: '#374151',
   },
   loading: {
     textAlign: 'center',
