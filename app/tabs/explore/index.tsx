@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { UserEvent } from "@/types/user_event";
 import * as Location from "expo-location";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -152,7 +152,14 @@ export default function Explore() {
     return (
       <Pressable
         style={styles.card}
-        onPress={() => console.log("Clicked event:", item.title)}
+        onPress={() => {
+          router.push({
+            pathname: "/tabs/explore/inspect_event",
+            params: {
+              user: JSON.stringify(user),
+            },
+          })
+        }}
       >
         <View style={styles.accent} />
         <View style={styles.cardContent}>
