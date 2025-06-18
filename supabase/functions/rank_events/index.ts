@@ -10,7 +10,7 @@ function getDistanceFromLatLonInMiles(
   lon2: number
 ): number {
   const toRad = (value: number) => (value * Math.PI) / 180;
-  const R = 3958.8; // Radius of the Earth in miles
+  const R = 3958.8;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
@@ -46,21 +46,22 @@ serve(async (req) => {
 
   const { data: interactions, error: interactionError } = await supabase
     .from("user_interactions")
-    .select("*")
+    .select("target_id")
     .eq("user_id", user_id);
-  
+
   if (interactionError) {
     return new Response(JSON.stringify({ error: interactionError.message }), { status: 500 });
   }
 
+  const interactedWithSet = new Set(interactions.map((i) => i.target_id));
+
   const collectedEvents: any[] = [];
   let moreToFetch = true;
   let absoluteOffset = offset;
-
-  const LOOKAHEAD_SIZE = pageSize * 2; // or set to whatever logic you want
+  const LOOKAHEAD_SIZE = pageSize * 2;
 
   while (collectedEvents.length < pageSize && moreToFetch) {
-    const { data: events, error } = await supabase
+    const { data: events, error: eventError } = await supabase
       .from("events")
       .select("*")
       .eq("post_only_to_group", false)
@@ -68,8 +69,8 @@ serve(async (req) => {
       .order("id", { ascending: true })
       .range(absoluteOffset, absoluteOffset + LOOKAHEAD_SIZE - 1);
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    if (eventError) {
+      return new Response(JSON.stringify({ error: eventError.message }), { status: 500 });
     }
 
     if (!events || events.length === 0) {
@@ -77,17 +78,25 @@ serve(async (req) => {
       break;
     }
 
-    const filtered = events.filter((e) =>
-      (userAge >= e.min_age) &&
-      (userAge <= e.max_age)
+    const filtered = events.filter(
+      (e) => userAge >= e.min_age && userAge <= e.max_age
     );
 
-    const scoredEvents: any[] = [];
-    for (let i = 0; i < filtered.length; i++) {
-      const event = filtered[i];
+    const groupIds = filtered.map(e => e.group_id);
 
-      // Score each event based on a few factors:
-      // Distance from user
+    const { data: groups } = await supabase
+      .from("groups")
+      .select("id, members")
+      .in("id", groupIds);
+
+    const groupMap = new Map(groups?.map(group => [group.id, group]));
+
+    const scoredEvents: any[] = [];
+    for (const event of filtered) {
+      const group = groupMap.get(event.group_id);
+      const isUserInGroup = group?.members?.includes(user_id) || false;
+      const interactedWithCount = group?.members?.filter(id => interactedWithSet.has(id)).length || 0;
+
       const distance = getDistanceFromLatLonInMiles(
         userLatitude,
         userLongitude,
@@ -95,104 +104,41 @@ serve(async (req) => {
         event.longitude
       );
 
-      // User part of the group hosting the event
-      let userInGroupHostinEvent = false;
-      let groupHostingEvent;
-      try {
-        const { data: groupHostingEvent } = await supabase
-          .from("groups")
-          .select("*")
-          .eq("id", event.group_id)
-          .single();
+      const countWithOrganizer = interactedWithSet.has(event.organizer_id) ? 1 : 0;
 
-        userInGroupHostinEvent = groupHostingEvent?.members?.includes(user_id) || false;
-        groupHostingEvent = groupHostingEvent;
-      } catch (error) {
-        console.error("Error fetching group for event:", error);
-      }
+      const eventRecency = (new Date(event.start_time).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      const recencyScore = Math.max(0, 30 - eventRecency);
 
-      // Count of times user interacted with organizer of event
-      let countOfUserInteractionsWithOrganizer = 0;
-      try {
-        const { data: organizerInteractions } = await supabase
-          .from("users")
-          .select("*")
-          .eq("user_id", user_id)
-          .eq("target_id", event.organizer_id);
-
-        countOfUserInteractionsWithOrganizer = interactions.filter(
-          (interaction) => interaction.target_id === organizerInteractions[0].id
-        ).length || 0;
-      } catch (error) {
-        console.error("Error fetching organizer user for event:", error);
-      }
-
-      // User interacted with person/people in group hosting the event
-      const numberOfInteractedWithGroupMembers = groupHostingEvent?.members?.filter(
-        (memberId) => interactions.some((interaction) => interaction.target_id === memberId)
-      ).length || 0;
-
-      // Event recency (prioritize closer events)
-      const eventRecency = (new Date(event.start_time).getTime() - Date.now()) / (1000 * 60 * 60 * 24); // in days
-      const recencyScore = Math.max(0, 30 - eventRecency); // Score out of 30 days
-
-      // Upvotes/popularity of the event
       const popularityScore = event.upvotes || 0;
-
-      // Age bracket match quality (small bonus if user is in midrange of min_age and max_age)
       const ageBracketMatchQuality = Math.max(
         0,
         Math.min(1, (userAge - event.min_age) / (event.max_age - event.min_age))
       );
 
-      // Event repeat attendance (if user has attended before, give a bonus)
-      // TODO: Implement logic to track what events the user has attended
+      const score =
+        (1 / (1 + distance)) * 10 +
+        (isUserInGroup ? 5 : 0) +
+        (countWithOrganizer * 2) +
+        interactedWithCount +
+        recencyScore +
+        (popularityScore * 0.1) +
+        (ageBracketMatchQuality * 5);
 
-      // LLM-based similarity score based on event description and user interests
-      // TODO: Implement LLM-based scoring
-
-      // Social hints (e.g., friends attending, mutual connections)
-      // TODO: Implement social hints scoring
-
-      // Calculate final score
-      const score = (
-        (1 / (1 + distance)) * 10 + // Inverse distance score
-        (userInGroupHostinEvent ? 5 : 0) + // Group membership bonus
-        (countOfUserInteractionsWithOrganizer * 2) + // Interaction with organizer
-        (numberOfInteractedWithGroupMembers * 1) + // Interaction with group members
-        recencyScore + // Recency score
-        (popularityScore * 0.1) + // Popularity score
-        (ageBracketMatchQuality * 5) // Age bracket match quality
-      );
-      const scoredEvent = {
-        ...event,
-        score,
-      };
-      scoredEvents.push(scoredEvent);
+      scoredEvents.push({ ...event, score });
     }
 
-    // sort events by score in descending order
-    scoredEvents.sort((a, b) => (b?.score || 0) - (a?.score || 0));
-
+    scoredEvents.sort((a, b) => (b.score || 0) - (a.score || 0));
     collectedEvents.push(...scoredEvents);
 
-    // Advance by raw number of events fetched to preserve paging
     absoluteOffset += events.length;
-
-    if (events.length < LOOKAHEAD_SIZE) {
-      // If we fetched less than the expected range, no more events to fetch
-      moreToFetch = false;
-    }
+    if (events.length < LOOKAHEAD_SIZE) moreToFetch = false;
   }
-
-  const hasMore = moreToFetch;
-  const nextOffset = hasMore ? absoluteOffset : null;
 
   return new Response(
     JSON.stringify({
       events: collectedEvents,
-      has_more: hasMore,
-      next_offset: nextOffset,
+      has_more: moreToFetch,
+      next_offset: moreToFetch ? absoluteOffset : null,
     }),
     {
       headers: { "Content-Type": "application/json" },
