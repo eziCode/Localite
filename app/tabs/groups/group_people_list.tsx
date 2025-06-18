@@ -26,6 +26,7 @@ const GroupPeopleList = () => {
   const groupId = params.groupId as string;
   const whoToFetch = params.whoToFetch as string;
   const userDoingInspectionId = params.userDoingInspection as string;
+  const userDoingInspectRole = params.userDoingInspectRole as string;
 
   const [users, setUsers] = useState<PublicUser[]>([]);
   const [page, setPage] = useState(0);

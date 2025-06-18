@@ -187,7 +187,17 @@ export default function ForeignGroupsView() {
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Leaders</Text>
               {leadersCount > 5 && (
-                <TouchableOpacity onPress={() => router.push({ pathname: "/tabs/groups/group_people_list", params: { groupId: group.id, whoToFetch: "leaders", userDoingInspect: user.id } })}>
+                <TouchableOpacity onPress={() => {
+                  const role = user.id === founderUser?.user_id ? "founder" : user.id in leadersUserInfos.map(u => u.user_id) ? "leader" : "member";
+                  router.push({ pathname: "/tabs/groups/group_people_list", 
+                                params: { 
+                                  groupId: group.id, 
+                                  whoToFetch: "leaders", 
+                                  userDoingInspect: user.id, 
+                                  userDoingInspectRole: role
+                                } 
+                              });
+                }}>
                   <Text style={styles.arrowButtonText}>›</Text>
                 </TouchableOpacity>
               )}
@@ -215,7 +225,17 @@ export default function ForeignGroupsView() {
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Members</Text>
               {membersCount > 5 && (
-                <TouchableOpacity onPress={() => router.push({ pathname: "/tabs/groups/group_people_list", params: { groupId: group.id, whoToFetch: "members", userDoingInspect: user.id } })}>
+                <TouchableOpacity onPress={() => {
+                  const role = user.id === founderUser?.user_id ? "founder" : user.id in leadersUserInfos.map(u => u.user_id) ? "leader" : "member";
+                  router.push({ pathname: "/tabs/groups/group_people_list", 
+                                params: { 
+                                  groupId: group.id, 
+                                  whoToFetch: "members", 
+                                  userDoingInspect: user.id, 
+                                  userDoingInspectRole: role
+                                } 
+                              });
+                }}>
                   <Text style={styles.arrowButtonText}>›</Text>
                 </TouchableOpacity>
               )}
