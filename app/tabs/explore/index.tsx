@@ -102,7 +102,6 @@ export default function Explore() {
           has_more: boolean,
           next_offset: number | null,
         };
-        console.log(`Fetched ${newEvents.length} events, has_more: ${has_more}, next_offset: ${next_offset}`);
 
         if (offsetToUse === 0) {
           setEvents(newEvents);

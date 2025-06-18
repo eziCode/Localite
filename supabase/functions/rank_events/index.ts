@@ -82,7 +82,10 @@ serve(async (req) => {
       (userAge <= e.max_age)
     );
 
-    const scoredEvents = filtered.map((event) => {
+    const scoredEvents: any[] = [];
+    for (let i = 0; i < filtered.length; i++) {
+      const event = filtered[i];
+
       // Score each event based on a few factors:
       // Distance from user
       const distance = getDistanceFromLatLonInMiles(
@@ -93,46 +96,85 @@ serve(async (req) => {
       );
 
       // User part of the group hosting the event
-      const { data: groupHostingEvent, error: groupError } = await supabase
-        .from("groups")
-        .select("*")
-        .eq("id", event.group_id)
-        .single();
-      if (groupError) {
-        console.error("Error fetching group for event:", groupError);
-        return null; // Skip this event if group fetch fails
-      }
-      const isUserInGroup = groupHostingEvent?.members?.includes(user_id) || false;
+      let userInGroupHostinEvent = false;
+      let groupHostingEvent;
+      try {
+        const { data: groupHostingEvent } = await supabase
+          .from("groups")
+          .select("*")
+          .eq("id", event.group_id)
+          .single();
 
-      // User interacted with user who created the event
-      const { data: organizerUser, error: organizerError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("user_id", event.organizer_id)
-        .single();
-      if (organizerError) {
-        console.error("Error fetching organizer user for event:", organizerError);
-        return null; // Skip this event if organizer user fetch fails
+        userInGroupHostinEvent = groupHostingEvent?.members?.includes(user_id) || false;
+        groupHostingEvent = groupHostingEvent;
+      } catch (error) {
+        console.error("Error fetching group for event:", error);
       }
-      const hasInteractedWithOrganizer = interactions.some(
-        (interaction) => interaction.target_id === organizerUser.id
-      );
+
+      // Count of times user interacted with organizer of event
+      let countOfUserInteractionsWithOrganizer = 0;
+      try {
+        const { data: organizerInteractions } = await supabase
+          .from("users")
+          .select("*")
+          .eq("user_id", user_id)
+          .eq("target_id", event.organizer_id);
+
+        countOfUserInteractionsWithOrganizer = interactions.filter(
+          (interaction) => interaction.target_id === organizerInteractions[0].id
+        ).length || 0;
+      } catch (error) {
+        console.error("Error fetching organizer user for event:", error);
+      }
 
       // User interacted with person/people in group hosting the event
       const numberOfInteractedWithGroupMembers = groupHostingEvent?.members?.filter(
         (memberId) => interactions.some((interaction) => interaction.target_id === memberId)
       ).length || 0;
 
-      // Event recency
-      // Upvotes/popularity of the event
-      // Age bracket match quality (small bonus if user is in midrange of min_age and max_age)
-      // Event repeat attendance (if user has attended before, give a bonus)
-      // Penalize events that conflict with those already on user's calendar
-      // LLM-based similarity score based on event description and user interests
-      // Social hints (e.g., friends attending, mutual connections)
-    });
+      // Event recency (prioritize closer events)
+      const eventRecency = (new Date(event.start_time).getTime() - Date.now()) / (1000 * 60 * 60 * 24); // in days
+      const recencyScore = Math.max(0, 30 - eventRecency); // Score out of 30 days
 
-    collectedEvents.push(...filtered);
+      // Upvotes/popularity of the event
+      const popularityScore = event.upvotes || 0;
+
+      // Age bracket match quality (small bonus if user is in midrange of min_age and max_age)
+      const ageBracketMatchQuality = Math.max(
+        0,
+        Math.min(1, (userAge - event.min_age) / (event.max_age - event.min_age))
+      );
+
+      // Event repeat attendance (if user has attended before, give a bonus)
+      // TODO: Implement logic to track what events the user has attended
+
+      // LLM-based similarity score based on event description and user interests
+      // TODO: Implement LLM-based scoring
+
+      // Social hints (e.g., friends attending, mutual connections)
+      // TODO: Implement social hints scoring
+
+      // Calculate final score
+      const score = (
+        (1 / (1 + distance)) * 10 + // Inverse distance score
+        (userInGroupHostinEvent ? 5 : 0) + // Group membership bonus
+        (countOfUserInteractionsWithOrganizer * 2) + // Interaction with organizer
+        (numberOfInteractedWithGroupMembers * 1) + // Interaction with group members
+        recencyScore + // Recency score
+        (popularityScore * 0.1) + // Popularity score
+        (ageBracketMatchQuality * 5) // Age bracket match quality
+      );
+      const scoredEvent = {
+        ...event,
+        score,
+      };
+      scoredEvents.push(scoredEvent);
+    }
+
+    // sort events by score in descending order
+    scoredEvents.sort((a, b) => (b?.score || 0) - (a?.score || 0));
+
+    collectedEvents.push(...scoredEvents);
 
     // Advance by raw number of events fetched to preserve paging
     absoluteOffset += events.length;
