@@ -5,16 +5,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
-    Dimensions,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
-
-const { width } = Dimensions.get('window');
 
 const InspectEvent = () => {
   const params = useLocalSearchParams();

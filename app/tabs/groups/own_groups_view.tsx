@@ -425,7 +425,20 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
               .slice()
               .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
               .map((event) => (
-                <View key={event.id} style={styles.eventCard}>
+                <TouchableOpacity
+                  key={event.id}
+                  style={styles.eventCard}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/(shared)/inspect_event",
+                      params: {
+                        event: JSON.stringify(event),
+                        user: JSON.stringify(user),
+                      },
+                    });
+                    uploadUserInteraction(user.id, event.id, "viewed_event", "event");
+                  }}
+                >
                   <Text style={styles.eventTitle}>{event.title}</Text>
                   <Text style={styles.eventTime}>
                     {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -435,7 +448,7 @@ const canPromoteDemote = user.id === founder || leaders.includes(user.id);
                   {event.location_name && (
                     <Text style={styles.eventLocation}>{event.location_name}</Text>
                   )}
-                </View>
+                </TouchableOpacity>
               ))
           ) : (
             <Text style={styles.placeholderText}>No events on this day.</Text>

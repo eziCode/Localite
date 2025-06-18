@@ -154,7 +154,7 @@ export default function Explore() {
         style={styles.card}
         onPress={() => {
           router.push({
-            pathname: "/tabs/explore/inspect_event",
+            pathname: "/(shared)/inspect_event",
             params: {
               user: JSON.stringify(user),
               event: JSON.stringify(item),
