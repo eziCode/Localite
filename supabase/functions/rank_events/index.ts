@@ -23,6 +23,8 @@ function getDistanceFromLatLonInMiles(
   return R * c;
 }
 
+const MAX_DISTANCE_MILES = 4000.0; // Assuming a max distance of 4000 miles
+
 serve(async (req) => {
   const supabase = createClient(
     "https://axdnmsjjofythsclelgu.supabase.co",
@@ -79,7 +81,13 @@ serve(async (req) => {
     }
 
     const filtered = events.filter(
-      (e) => userAge >= e.min_age && userAge <= e.max_age
+      (e) => userAge >= e.min_age && userAge <= e.max_age &&
+        getDistanceFromLatLonInMiles(
+          userLatitude,
+          userLongitude,
+          e.latitude,
+          e.longitude
+        ) <= MAX_DISTANCE_MILES
     );
 
     const groupIds = filtered.map(e => e.group_id);
