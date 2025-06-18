@@ -98,7 +98,7 @@ export default function Auth() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fdf6ee", // Creamy background
+    backgroundColor: "#FAFAFB", // Light neutral background
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -106,34 +106,36 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF", // Card surface
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     elevation: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "600",
+    fontSize: 30,
+    fontWeight: "700",
     marginBottom: 24,
     textAlign: "center",
-    color: "#222",
+    color: "#1E1E1F", // Dark slate text
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#f3f3f3",
-    paddingVertical: 12,
+    backgroundColor: "#F1F1F3", // Light gray input
+    color: "#1E1E1F",
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     fontSize: 16,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   button: {
-    backgroundColor: "#ff5f05",
+    backgroundColor: "#6C4FF6", // Electric Indigo
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: "center",
     marginTop: 8,
     marginBottom: 16,
@@ -142,23 +144,23 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+    letterSpacing: 0.3,
   },
   linkText: {
     textAlign: "center",
     fontSize: 14,
-    color: "#444",
+    color: "#4D4D4D", // Medium-dark gray
     marginTop: 8,
     fontWeight: "500",
-    textDecorationColor: "#ccc",
-    textDecorationStyle: "dotted",
-    opacity: 0.9,
+    textDecorationLine: "underline",
+    textDecorationColor: "#6C4FF6",
   },
   errorContainer: {
-    backgroundColor: "rgba(255, 85, 85, 0.1)",
-    borderColor: "#ff5555",
+    backgroundColor: "rgba(255, 94, 91, 0.08)", // Soft coral background
+    borderColor: "#FF5E5B",
     borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorText: {
-    color: "#cc0000",
+    color: "#FF5E5B",
     fontSize: 14,
     textAlign: "center",
     fontWeight: "500",
