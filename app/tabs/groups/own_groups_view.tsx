@@ -1,6 +1,9 @@
+import GroupMemberActionModal from "@/app/(shared)/GroupMemberActionModal";
+import { useGroupMemberActions } from "@/lib/helper_components/useGroupMemberAction";
 import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import { PublicUser } from "@/types/public_user";
 import { Ionicons } from '@expo/vector-icons';
+import { useIsFocused } from "@react-navigation/native";
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -16,6 +19,7 @@ import {
   View
 } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
 import { UserEvent } from "../../../types/user_event";
@@ -32,9 +36,12 @@ export default function OwnGroupsView() {
 
   const [joinCode, setJoinCode] = useState<string>(group.join_code || "");
 
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<PublicUser | null>(null);
-  const [actionType, setActionType] = useState<"promote" | "demote" | "kick" | null>(null);
+  // Use your shared hook
+  const groupActions = useGroupMemberActions(group.id, {
+    founder: group.founder,
+    leaders: group.leaders ?? [],
+    members: group.members,
+  }, setGroup);
 
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
@@ -48,6 +55,23 @@ export default function OwnGroupsView() {
 
   const [showMemberOptions, setShowMemberOptions] = useState(false);
   const [memberOptionUser, setMemberOptionUser] = useState<PublicUser | null>(null);
+
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (!isFocused) return;
+    // Fetch the latest group data from Supabase
+    const fetchGroup = async () => {
+      const { data } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('id', group.id)
+        .single();
+      if (data) setGroup(data);
+    };
+    fetchGroup();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused]);
 
   useEffect(() => {
     const idsToFetch = [founder, ...leaders.slice(0, leaderToFetchCount), ...members.slice(0, memberToFetchCount)];
@@ -73,7 +97,7 @@ export default function OwnGroupsView() {
 
     fetchEvents();
     fetchMemberData();
-  }, [founder, group.id, group.members, leaderToFetchCount, leaders, memberToFetchCount, members]);
+  }, [founder, group.id, group.members, group.leaders, leaderToFetchCount, leaders, memberToFetchCount, members]);
 
   let founderUser = userInfos.find((u) => u.user_id === founder);
   let leadersUserInfos = userInfos.filter((u) => leaders.includes(u.user_id));
@@ -88,77 +112,10 @@ export default function OwnGroupsView() {
       return acc;
     }, {});
 
-  const makeMemberLeader = async (userId: string) => {
-    const { error } = await supabase
-      .from("groups")
-      .update({
-        leaders: [...leaders, userId],
-      })
-      .eq("id", group.id);
-    
-    if (error) {
-      console.error("Error making member a leader:", error);
-    }
-    else {
-      // Update local state to reflect the change
-      const newLeader = userInfos.find((u) => u.user_id === userId);
-      if (newLeader) {
-        setGroup((prev) => ({
-          ...prev,
-          leaders: [...(prev.leaders ?? []), userId],
-        }));
-        setLeaderCount((c) => c + 1);
-        setMemberCount((c) => c - 1);
-      }
-    }
-  };
-
-  const demoteLeaderToMember = async (userId: string) => {
-    const newLeaders = (group.leaders ?? []).filter((id) => id !== userId);
-    // Ensure founder is always included in members array
-    const newMembers = Array.from(new Set([...group.members, userId, founder]));
-    const { error } = await supabase
-      .from("groups")
-      .update({
-        leaders: newLeaders,
-        members: newMembers,
-      })
-      .eq("id", group.id);
-    if (error) {
-      console.error("Error demoting leader to member:", error);
-    } else {
-      setGroup((prev) => ({
-        ...prev,
-        leaders: newLeaders,
-        members: newMembers,
-      }));
-      setLeaderCount((c) => c - 1);
-      setMemberCount((c) => c + 1);
-    }
-  };
-
-  const kickGroupMember = async (userId: string) => {
-    const { error } = await supabase.rpc(
-      "kick_group_member_with_group_id_as_uuid", 
-      { member_to_remove: userId, group_to_edit: group.id }
-    );
-    if (error) {
-      console.error("Error kicking member:", error);
-    }
-    else {
-      // Update local state to reflect the change
-      setGroup((prev) => ({
-        ...prev,
-        members: prev.members.filter((id) => id !== userId),
-      }));
-      setMemberCount((c) => c - 1);
-    }
-  };
-
   const openActionModal = (user: PublicUser, type: "promote" | "demote" | "kick") => {
-    setSelectedUser(user);
-    setActionType(type);
-    setShowActionModal(true);
+    groupActions.setSelectedUser(user);
+    groupActions.setActionType(type);
+    groupActions.setShowActionModal(true);
     Vibration.vibrate(50); // slight buzz
   };
 
@@ -172,20 +129,6 @@ export default function OwnGroupsView() {
     } else {
       router.back();
     }
-  };
-
-  const handleActionConfirm = async () => {
-    if (!selectedUser || !actionType) return;
-    if (actionType === "promote") {
-      await makeMemberLeader(selectedUser.user_id);
-    } else if (actionType === "demote") {
-      await demoteLeaderToMember(selectedUser.user_id);
-    } else if (actionType === "kick") {
-      await kickGroupMember(selectedUser.user_id);
-    }
-    setShowActionModal(false);
-    setSelectedUser(null);
-    setActionType(null);
   };
 
   const pushJoinCodeToGroupTable = async (joinCode: string) => {
@@ -203,14 +146,14 @@ export default function OwnGroupsView() {
   const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fdfdfd" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fdfdfd" }} edges={['top']}>
       {/* Fixed Header */}
-      <View style={styles.fixedHeader}>
+      <SafeAreaView edges={['top']} style={styles.fixedHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={20} color="#333" />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -277,10 +220,10 @@ export default function OwnGroupsView() {
           <View>
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Leaders</Text>
-              {leadersCount > 5 && (
+              {leaders.length > 5 && (
                 <TouchableOpacity onPress={() => {
                   const role = user.id === founderUser?.user_id ? "founder" : user.id in leadersUserInfos.map(u => u.user_id) ? "leader" : "member";
-                  router.push({ pathname: "/tabs/groups/group_people_list", 
+                  router.push({ pathname: "/tabs/groups/group_people_list",
                                 params: { 
                                   groupId: group.id, 
                                   whoToFetch: "leaders", 
@@ -334,7 +277,7 @@ export default function OwnGroupsView() {
           <View>
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Members</Text>
-              {membersCount > 5 && (
+              {members.length > 5 && (
                 <TouchableOpacity onPress={() => {
                   const role = user.id === founderUser?.user_id ? "founder" : user.id in leadersUserInfos.map(u => u.user_id) ? "leader" : "member";
                   router.push({ pathname: "/tabs/groups/group_people_list", 
@@ -511,63 +454,13 @@ export default function OwnGroupsView() {
           current_group={group}
         />
       </Modal>
-      <Modal
-        visible={showActionModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowActionModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>
-              {actionType === "promote"
-                ? `Promote ${selectedUser?.user_name} to Leader?`
-                : actionType === "demote"
-                ? `Demote ${selectedUser?.user_name} to Member?`
-                : actionType === "kick"
-                ? `Kick ${selectedUser?.user_name} from the group?`
-                : ""}
-            </Text>
-            <Text style={styles.modalSubtext}>
-              {actionType === "kick"
-                ? "This member will be removed from the group immediately."
-                : "This change will take effect immediately."}
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.cancelButton, { marginTop: 0, marginRight: 10, width: "48%" }]}
-                onPress={() => setShowActionModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.confirmButton,
-                  { width: "48%" },
-                  actionType === "promote"
-                    ? styles.promoteColor
-                    : actionType === "demote"
-                    ? styles.demoteColor
-                    : actionType === "kick"
-                    ? { backgroundColor: "#f43f5e" }
-                    : {},
-                ]}
-                onPress={handleActionConfirm}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {actionType === "promote"
-                    ? "Promote"
-                    : actionType === "demote"
-                    ? "Demote"
-                    : actionType === "kick"
-                    ? "Kick"
-                    : ""}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <GroupMemberActionModal
+        visible={groupActions.showActionModal}
+        onClose={() => groupActions.setShowActionModal(false)}
+        actionType={groupActions.actionType}
+        selectedUser={groupActions.selectedUser}
+        onConfirm={groupActions.handleActionConfirm}
+      />
       <Modal
         visible={showMemberOptions}
         transparent
@@ -612,7 +505,7 @@ export default function OwnGroupsView() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -623,12 +516,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingTop: 44,
+    backgroundColor: 'rgba(250,250,251,0.95)',
     paddingHorizontal: 24,
     paddingBottom: 16,
-    backgroundColor: 'rgba(250,250,251,0.95)',
-    marginTop: 18,
     paddingLeft: 16,
+    // No marginTop or paddingTop here!
   },
   backButton: {
     flexDirection: 'row',

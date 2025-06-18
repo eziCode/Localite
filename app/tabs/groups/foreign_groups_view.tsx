@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
 
@@ -130,16 +131,16 @@ export default function ForeignGroupsView() {
   return (
     <View style={{ flex: 1, backgroundColor: "#fdfdfd" }}>
       {/* Fixed Header */}
-      <View style={styles.fixedHeader}>
+      <SafeAreaView edges={['top']} style={styles.fixedHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={20} color="#333" />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingBottom: 80, paddingTop: 100 } // Add enough top padding to push content below header
+          { paddingBottom: 80, paddingTop: 100 }
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -188,13 +189,12 @@ export default function ForeignGroupsView() {
               <Text style={styles.sectionHeader}>Leaders</Text>
               {leadersCount > 5 && (
                 <TouchableOpacity onPress={() => {
-                  const role = user.id === founderUser?.user_id ? "founder" : user.id in leadersUserInfos.map(u => u.user_id) ? "leader" : "member";
                   router.push({ pathname: "/tabs/groups/group_people_list", 
                                 params: { 
                                   groupId: group.id, 
                                   whoToFetch: "leaders", 
                                   userDoingInspect: user.id, 
-                                  userDoingInspectRole: role
+                                  userDoingInspectRole: "viewer"
                                 } 
                               });
                 }}>
@@ -226,13 +226,12 @@ export default function ForeignGroupsView() {
               <Text style={styles.sectionHeader}>Members</Text>
               {membersCount > 5 && (
                 <TouchableOpacity onPress={() => {
-                  const role = user.id === founderUser?.user_id ? "founder" : user.id in leadersUserInfos.map(u => u.user_id) ? "leader" : "member";
                   router.push({ pathname: "/tabs/groups/group_people_list", 
                                 params: { 
                                   groupId: group.id, 
                                   whoToFetch: "members", 
                                   userDoingInspect: user.id, 
-                                  userDoingInspectRole: role
+                                  userDoingInspectRole: "viewer"
                                 } 
                               });
                 }}>
@@ -323,11 +322,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingTop: 44, // or StatusBar.currentHeight || 44 for Android/iOS
+    paddingTop: 0, // SafeAreaView will handle top padding
     paddingHorizontal: 24,
     paddingBottom: 16,
     backgroundColor: 'rgba(250,250,251,0.95)',
-    marginTop: 18,
     paddingLeft: 16,
   },
   backButton: {
