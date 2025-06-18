@@ -1,5 +1,6 @@
 import { uploadUserInteraction } from "@/lib/helper_functions/uploadUserInteraction";
 import { PublicUser } from "@/types/public_user";
+import { Ionicons } from '@expo/vector-icons';
 import { format } from "date-fns";
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,7 +16,6 @@ import {
   View
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
 import { UserEvent } from "../../../types/user_event";
@@ -43,7 +43,7 @@ export default function OwnGroupsView() {
   const members = group.members.filter((m) => m !== founder && !leaders.includes(m));
   const [leadersCount, setLeaderCount] = useState<number>(leaders.length);
   const [membersCount, setMemberCount] = useState<number>(members.length);
-  const leaderToFetchCount = leadersCount && leadersCount > 5 ? 5 : leadersCount;
+  const leaderToFetchCount = leadersCount > 5 ? 5 : leadersCount;
   const memberToFetchCount = membersCount > 5 ? 5 : membersCount;
 
   const [showMemberOptions, setShowMemberOptions] = useState(false);
@@ -107,10 +107,8 @@ export default function OwnGroupsView() {
           ...prev,
           leaders: [...(prev.leaders ?? []), userId],
         }));
-        const currentLeaderCount = leadersCount
-        const currentMemberCount = membersCount
-        setLeaderCount(currentLeaderCount + 1);
-        setMemberCount(currentMemberCount - 1);
+        setLeaderCount((c) => c + 1);
+        setMemberCount((c) => c - 1);
       }
     }
   };
@@ -134,8 +132,8 @@ export default function OwnGroupsView() {
         leaders: newLeaders,
         members: newMembers,
       }));
-      setLeaderCount(leadersCount - 1);
-      setMemberCount(membersCount + 1);
+      setLeaderCount((c) => c - 1);
+      setMemberCount((c) => c + 1);
     }
   };
 
@@ -153,7 +151,7 @@ export default function OwnGroupsView() {
         ...prev,
         members: prev.members.filter((id) => id !== userId),
       }));
-      setMemberCount(membersCount - 1);
+      setMemberCount((c) => c - 1);
     }
   };
 
@@ -200,31 +198,68 @@ export default function OwnGroupsView() {
       console.error("Error updating join code:", error);
     }
   };
-  // Text box displaying current join code
-  // If box is empty (no join code to be fetched), display button to generate a new join code
-  // If join code is present, display text box with join code and button to copy it (maybe add a button to share to other platforms)
-  // Only show the join code if the user is the founder or a leader of the group
 
   // Helper to check if current user is founder or leader
   const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 
-  return (
-    <>
-    <SafeAreaView style={styles.container}>
-       <View style={styles.header}>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.backButtonText}>← Back</Text>
-      </TouchableOpacity>
+  // Member row component for consistency
+  const MemberRow = ({ name, badge, profile_picture_url }: { name: string; badge?: string; profile_picture_url?: string }) => (
+    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10, paddingLeft: 4 }}>
+      {profile_picture_url ? (
+        <Image
+          source={{ uri: profile_picture_url }}
+          style={{ width: 32, height: 32, borderRadius: 16, marginRight: 12, backgroundColor: "#e4e4e7" }}
+        />
+      ) : (
+        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#e4e4e7", marginRight: 12 }} />
+      )}
+      <Text style={{ fontSize: 16, color: "#1e1e1f", flex: 1 }}>{name}</Text>
+      {badge && <Text style={{ fontSize: 12, color: "#f59e0b", fontWeight: "600", marginLeft: 8 }}>{badge}</Text>}
     </View>
+  );
 
-      <Text style={styles.groupTitle}>{group.name}</Text>
+  return (
+    <View style={{ flex: 1, backgroundColor: "#fdfdfd" }}>
+      {/* Fixed Header */}
+      <View style={styles.fixedHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={20} color="#333" />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: 80, paddingTop: 100 }
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Banner */}
+        <View style={styles.banner}>
+          <Text style={styles.groupName}>{group.name}</Text>
+          {group.description && (
+            <Text style={styles.description}>{group.description}</Text>
+          )}
+          {!!group.vibes?.length && (
+            <View style={styles.vibes}>
+              {group.vibes.map((vibe: string, i: number) => (
+                <Text key={i} style={styles.vibe}>#{vibe.toLowerCase()}</Text>
+              ))}
+            </View>
+          )}
+          {group.visibility && (
+            <Text style={styles.metaBadge}>
+              {group.visibility === "open" && "🌐 Open to All"}
+              {group.visibility === "request" && "📝 Request to Join"}
+              {group.visibility === "hidden" && "🙈 Hidden"}
+            </Text>
+          )}
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
-        {founder && founderUser && (
+        {/* Founder */}
+        {founderUser && (
           <View style={styles.founderContainer}>
             <TouchableOpacity
-              style={styles.memberRow}
-              disabled={founderUser.user_id === user.id}
               onPress={() => {
                 if (founderUser.user_id !== user.id) {
                   router.push({
@@ -234,46 +269,40 @@ export default function OwnGroupsView() {
                   uploadUserInteraction(user.id, founderUser.user_id, "viewed_user_profile", "user");
                 }
               }}
+              activeOpacity={0.7}
+              disabled={founderUser.user_id === user.id}
             >
-              {founderUser.profile_picture_url ? (
-                <Image
-                  source={{ uri: founderUser.profile_picture_url }}
-                  style={styles.avatarCircle}
-                />
-              ) : (
-                <View style={styles.avatarCircle} />
-              )}
-              <Text style={styles.memberName}>{founderUser.user_name}</Text>
-              <Text style={styles.badge}>Founder 👑</Text>
+              <MemberRow
+                name={founderUser.user_name}
+                badge="Founder 👑"
+                profile_picture_url={founderUser.profile_picture_url}
+              />
             </TouchableOpacity>
           </View>
         )}
 
+        {/* Leaders */}
         {leadersCount > 0 && (
-          <>
+          <View>
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Leaders</Text>
               {leadersCount > 5 && (
-                <TouchableOpacity onPress={() => {router.push({
+                <TouchableOpacity onPress={() => router.push({
                   pathname: "/tabs/groups/group_people_list",
                   params: { groupId: group.id, whoToFetch: "leaders", userDoingInspection: user.id },
-                })}} style={styles.moreArrow}>
-                  <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+                })}>
+                  <Text style={styles.arrowButtonText}>›</Text>
                 </TouchableOpacity>
               )}
             </View>
             {leadersUserInfos.slice(0, 5).map((leader) => (
               <TouchableOpacity
                 key={leader.id}
-                style={styles.memberRow}
-                disabled={leader.user_id === user.id}
                 onPress={() => {
                   if (leader.user_id !== user.id) {
                     router.push({
                       pathname: "/tabs/groups/inspect_user",
-                      params: {
-                        userToInspectId: leader.user_id 
-                      },
+                      params: { userToInspectId: leader.user_id },
                     });
                     uploadUserInteraction(user.id, leader.user_id, "viewed_user_profile", "user");
                   }
@@ -283,39 +312,35 @@ export default function OwnGroupsView() {
                     ? () => openActionModal(leader, "demote")
                     : undefined
                 }
+                activeOpacity={0.7}
+                disabled={leader.user_id === user.id}
               >
-                {leader.profile_picture_url ? (
-                  <Image
-                    source={{ uri: leader.profile_picture_url }}
-                    style={styles.avatarCircle}
-                  />
-                ) : (
-                  <View style={styles.avatarCircle} />
-                )}
-                <Text style={styles.memberName}>{leader.user_name}</Text>
+                <MemberRow
+                  name={leader.user_name}
+                  profile_picture_url={leader.profile_picture_url}
+                />
               </TouchableOpacity>
             ))}
-          </>
+          </View>
         )}
 
+        {/* Members */}
         {membersCount > 0 && (
-          <>
+          <View>
             <View style={styles.sectionWithArrow}>
               <Text style={styles.sectionHeader}>Members</Text>
               {membersCount > 5 && (
-                <TouchableOpacity onPress={() => {router.push({
+                <TouchableOpacity onPress={() => router.push({
                   pathname: "/tabs/groups/group_people_list",
                   params: { groupId: group.id, whoToFetch: "members", userDoingInspection: user.id },
-                })}} style={styles.moreArrow}>
-                  <Text style={{ fontSize: 25, color: "#7c3aed" }}>›</Text>
+                })}>
+                  <Text style={styles.arrowButtonText}>›</Text>
                 </TouchableOpacity>
               )}
             </View>
             {membersUserInfos.slice(0, 5).map((member) => (
               <TouchableOpacity
                 key={member.id}
-                style={styles.memberRow}
-                disabled={member.user_id === user.id}
                 onPress={() => {
                   if (member.user_id !== user.id) {
                     router.push({
@@ -337,21 +362,19 @@ export default function OwnGroupsView() {
                       }
                     : undefined
                 }
+                activeOpacity={0.7}
+                disabled={member.user_id === user.id}
               >
-                {member.profile_picture_url ? (
-                  <Image
-                    source={{ uri: member.profile_picture_url }}
-                    style={styles.avatarCircle}
-                  />
-                ) : (
-                  <View style={styles.avatarCircle} />
-                )}
-                <Text style={styles.memberName}>{member.user_name}</Text>
+                <MemberRow
+                  name={member.user_name}
+                  profile_picture_url={member.profile_picture_url}
+                />
               </TouchableOpacity>
             ))}
-          </>
+          </View>
         )}
 
+        {/* Join Code (for leaders/founder) */}
         {(user.id === founder || leaders.includes(user.id)) && (
           <View style={{ marginTop: 24, marginBottom: 24, backgroundColor: "#f3f0ff", borderRadius: 10, padding: 16 }}>
             <Text style={{ fontWeight: "600", color: "#6b21a8", marginBottom: 8 }}>Group Join Code</Text>
@@ -370,7 +393,6 @@ export default function OwnGroupsView() {
             ) : (
               <TouchableOpacity
                 onPress={async () => {
-                  // Generate a new join code (simple example: random 6 chars)
                   const newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
                   setJoinCode(newCode);
                   await pushJoinCodeToGroupTable(newCode);
@@ -383,12 +405,14 @@ export default function OwnGroupsView() {
           </View>
         )}
 
+        {/* Post Event Button */}
         {(user.id === founder || leaders.includes(user.id)) && (
           <TouchableOpacity onPress={() => setShowPostEventModal(true)} style={styles.postButton}>
-              <Text style={styles.postButtonText}>+ Post Event</Text>
+            <Text style={styles.postButtonText}>+ Post Event</Text>
           </TouchableOpacity>
         )}
 
+        {/* Leave Group Button */}
         <TouchableOpacity
           style={styles.leaveButton}
           onPress={() => {
@@ -398,28 +422,27 @@ export default function OwnGroupsView() {
           <Text style={styles.leaveButtonText}>Leave Group</Text>
         </TouchableOpacity>
 
+        {/* Events Section */}
         <View style={styles.eventsContainer}>
           <Text style={styles.sectionHeader}>Upcoming Events</Text>
-          
           <Calendar
-              onDayPress={(day) => setSelectedDate(day.dateString)}
-              markedDates={{
-                [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
-                ...Object.keys(eventsByDate).reduce((acc, date) => {
-                  acc[date] = { marked: true };
-                  return acc;
-                }, {} as Record<string, any>),
-              }}
-              theme={{
-                selectedDayBackgroundColor: "#7c3aed",
-                todayTextColor: "#7c3aed",
-              }}
-              style={{ borderRadius: 10, marginBottom: 16 }}
-            />
-            <Text style={{ color: "#888", fontSize: 13, textAlign: "center", marginBottom: 8 }}>
-              All times are shown in your local time zone.
-            </Text>
-
+            onDayPress={(day) => setSelectedDate(day.dateString)}
+            markedDates={{
+              [selectedDate]: { selected: true, selectedColor: "#7c3aed" },
+              ...Object.keys(eventsByDate).reduce((acc, date) => {
+                acc[date] = { marked: true };
+                return acc;
+              }, {} as Record<string, any>),
+            }}
+            theme={{
+              selectedDayBackgroundColor: "#7c3aed",
+              todayTextColor: "#7c3aed",
+            }}
+            style={{ borderRadius: 10, marginBottom: 16 }}
+          />
+          <Text style={{ color: "#888", fontSize: 13, textAlign: "center", marginBottom: 8 }}>
+            All times are shown in your local time zone.
+          </Text>
           {eventsByDate[selectedDate]?.length ? (
             eventsByDate[selectedDate]
               .slice()
@@ -454,11 +477,10 @@ export default function OwnGroupsView() {
             <Text style={styles.placeholderText}>No events on this day.</Text>
           )}
         </View>
-
       </ScrollView>
-    </SafeAreaView>
 
-    <Modal
+      {/* Modals */}
+      <Modal
         animationType="slide"
         visible={showPostEventModal}
         onRequestClose={() => setShowPostEventModal(false)}
@@ -470,183 +492,189 @@ export default function OwnGroupsView() {
           current_group={group}
         />
       </Modal>
-    <Modal
-      visible={showActionModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowActionModal(false)}
-    >
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>
-            {actionType === "promote"
-              ? `Promote ${selectedUser?.user_name} to Leader?`
-              : actionType === "demote"
-              ? `Demote ${selectedUser?.user_name} to Member?`
-              : actionType === "kick"
-              ? `Kick ${selectedUser?.user_name} from the group?`
-              : ""}
-          </Text>
-          <Text style={styles.modalSubtext}>
-            {actionType === "kick"
-              ? "This member will be removed from the group immediately."
-              : "This change will take effect immediately."}
-          </Text>
-
-          <View style={styles.modalButtons}>
+      <Modal
+        visible={showActionModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowActionModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>
+              {actionType === "promote"
+                ? `Promote ${selectedUser?.user_name} to Leader?`
+                : actionType === "demote"
+                ? `Demote ${selectedUser?.user_name} to Member?`
+                : actionType === "kick"
+                ? `Kick ${selectedUser?.user_name} from the group?`
+                : ""}
+            </Text>
+            <Text style={styles.modalSubtext}>
+              {actionType === "kick"
+                ? "This member will be removed from the group immediately."
+                : "This change will take effect immediately."}
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.cancelButton, { marginTop: 0, marginRight: 10, width: "48%" }]}
+                onPress={() => setShowActionModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  { width: "48%" },
+                  actionType === "promote"
+                    ? styles.promoteColor
+                    : actionType === "demote"
+                    ? styles.demoteColor
+                    : actionType === "kick"
+                    ? { backgroundColor: "#f43f5e" }
+                    : {},
+                ]}
+                onPress={handleActionConfirm}
+              >
+                <Text style={styles.confirmButtonText}>
+                  {actionType === "promote"
+                    ? "Promote"
+                    : actionType === "demote"
+                    ? "Demote"
+                    : actionType === "kick"
+                    ? "Kick"
+                    : ""}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showMemberOptions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMemberOptions(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>
+              What would you like to do with {memberOptionUser?.user_name}?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.promoteColor, { marginRight: 8 }]}
+                onPress={() => {
+                  setShowMemberOptions(false);
+                  if (memberOptionUser) {
+                    openActionModal(memberOptionUser, "promote");
+                  }
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Promote</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmButton, { backgroundColor: "#f43f5e" }]}
+                onPress={() => {
+                  setShowMemberOptions(false);
+                  if (memberOptionUser) {
+                    openActionModal(memberOptionUser, "kick");
+                  }
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Kick</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
-              style={[styles.cancelButton, { marginTop: 0, marginRight: 10, width: "48%" }]}
-              onPress={() => setShowActionModal(false)}
+              style={styles.cancelButton}
+              onPress={() => setShowMemberOptions(false)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                { width: "48%" },
-                actionType === "promote"
-                  ? styles.promoteColor
-                  : actionType === "demote"
-                  ? styles.demoteColor
-                  : actionType === "kick"
-                  ? { backgroundColor: "#f43f5e" }
-                  : {},
-              ]}
-              onPress={handleActionConfirm}
-            >
-              <Text style={styles.confirmButtonText}>
-                {actionType === "promote"
-                  ? "Promote"
-                  : actionType === "demote"
-                  ? "Demote"
-                  : actionType === "kick"
-                  ? "Kick"
-                  : ""}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
-    </Modal>
-    <Modal
-      visible={showMemberOptions}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowMemberOptions(false)}
-    >
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>
-            What would you like to do with {memberOptionUser?.user_name}?
-          </Text>
-
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              style={[styles.confirmButton, styles.promoteColor, { marginRight: 8 }]}
-              onPress={() => {
-                setShowMemberOptions(false);
-                if (memberOptionUser) {
-                  openActionModal(memberOptionUser, "promote");
-                }
-              }}
-            >
-              <Text style={styles.confirmButtonText}>Promote</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.confirmButton, { backgroundColor: "#f43f5e" }]}
-              onPress={() => {
-                setShowMemberOptions(false);
-                if (memberOptionUser) {
-                  openActionModal(memberOptionUser, "kick");
-                }
-              }}
-            >
-              <Text style={styles.confirmButtonText}>Kick</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setShowMemberOptions(false)}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-
-      </View>
-    </Modal>
-    </>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  modalTitle: {
-  fontSize: 18,
-  fontWeight: "600",
-  color: "#1f2937",
-  textAlign: "center",
-  marginBottom: 20,
-},
-
-modalSubtext: {
-  fontSize: 14,
-  color: "#6b7280",
-  textAlign: "center",
-  marginBottom: 20,
-},
-
-modalButtons: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  width: "100%",
-  gap: 12, // cleaner spacing than marginRight hacks
-},
-
-confirmButton: {
-  flex: 1,
-  paddingVertical: 14,
-  borderRadius: 10,
-  alignItems: "center",
-},
-
-cancelButton: {
-  backgroundColor: "#f3f4f6",
-  paddingVertical: 14,
-  borderRadius: 10,
-  width: "100%",
-  alignItems: "center",
-  marginTop: 16,
-},
-  modalContainer: {
-  width: "90%",
-  backgroundColor: "#fff",
-  paddingVertical: 28,
-  paddingHorizontal: 20,
-  borderRadius: 20,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 10,
-  elevation: 5,
-  alignItems: "center",
-},
-  container: { backgroundColor: "#fafafa", flex: 1 },
-  groupTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#3a3a3a",
-    textAlign: "center",
-    marginBottom: 10,
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    paddingTop: 44,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: 'rgba(250,250,251,0.95)',
+    marginTop: 18,
+    paddingLeft: 16,
   },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 60 },
-  sectionHeader: {
-    fontSize: 18,
-    fontWeight: "600",
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F1F3',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#1E1E1F',
+    marginLeft: 6,
+    fontWeight: '600',
+  },
+  container: {
+    backgroundColor: "#fffefc",
+    padding: 24,
+    paddingTop: 60,
+  },
+  banner: {
+    backgroundColor: "#fef9ff",
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 32,
+  },
+  groupName: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#7c3aed",
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: "#555",
+    marginBottom: 16,
+  },
+  vibes: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  vibe: {
+    backgroundColor: "#f3e8ff",
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    fontSize: 14,
+    color: "#7c3aed",
+    fontWeight: "500",
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  metaBadge: {
+    marginTop: 12,
+    backgroundColor: "#ede9fe",
     color: "#6b21a8",
-    marginTop: 24,
-    marginBottom: 10,
+    fontSize: 14,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontWeight: "600",
   },
   founderContainer: {
     marginBottom: 20,
@@ -656,29 +684,21 @@ cancelButton: {
     borderLeftColor: "#fbbf24",
     borderLeftWidth: 4,
   },
-  memberRow: {
+  sectionWithArrow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 24,
     marginBottom: 10,
-    paddingLeft: 4,
   },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#d4d4d8",
-    marginRight: 12,
-  },
-  memberName: {
-    fontSize: 16,
-    color: "#333",
-    flex: 1,
-  },
-  badge: {
-    fontSize: 12,
-    color: "#f59e0b",
+  sectionHeader: {
+    fontSize: 18,
     fontWeight: "600",
-    marginLeft: 8,
+    color: "#6b21a8",
+  },
+  arrowButtonText: {
+    fontSize: 25,
+    color: "#7c3aed",
   },
   postButton: {
     backgroundColor: "#7c3aed",
@@ -714,39 +734,7 @@ cancelButton: {
     backgroundColor: "#f3f0ff",
     borderRadius: 12,
   },
-  placeholderText: {
-    color: "#6b7280",
-    fontStyle: "italic",
-    textAlign: "center",
-    marginTop: 8,
-  },
-  sectionWithArrow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginTop: 24,
-  marginBottom: 10,
-    },
-    moreArrow: {
-    padding: 8,
-    },
-    safeArea: {
-    flex: 1,
-    backgroundColor: "#fafafa",
-    },
-    header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: "#fafafa",
-    },
-    backButtonText: {
-    fontSize: 18,
-    color: "#7c3aed",
-    },
-    eventCard: {
+  eventCard: {
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 12,
@@ -756,27 +744,79 @@ cancelButton: {
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-    },
-    eventTitle: {
+  },
+  eventTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#1f2937",
-    },
-    eventTime: {
+  },
+  eventTime: {
     color: "#6b7280",
     fontSize: 14,
     marginTop: 2,
-    },
-    eventLocation: {
+  },
+  eventLocation: {
     color: "#6b7280",
     fontSize: 13,
     marginTop: 2,
-    },
+  },
+  placeholderText: {
+    color: "#6b7280",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 8,
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  modalContainer: {
+    width: "90%",
+    backgroundColor: "#fff",
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1f2937",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalSubtext: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#f3f4f6",
+    paddingVertical: 14,
+    borderRadius: 10,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 16,
   },
   cancelButtonText: {
     color: "#374151",
@@ -785,59 +825,11 @@ cancelButton: {
   promoteColor: {
     backgroundColor: "#7c3aed",
   },
-
   demoteColor: {
     backgroundColor: "#f43f5e",
   },
-
   confirmButtonText: {
     color: "white",
     fontWeight: "600",
   },
-
-founderModalContainer: {
-  width: "85%",
-  backgroundColor: "#fef9f5",
-  padding: 24,
-  borderRadius: 20,
-  borderLeftWidth: 4,
-  borderLeftColor: "#fbbf24",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.12,
-  shadowRadius: 8,
-  elevation: 5,
-  alignItems: "center",
-  maxHeight: 300,
-  justifyContent: "space-between",
-},
-
-
-founderEmoji: {
-  fontSize: 40,
-  marginBottom: 10,
-},
-
-founderOkButton: {
-  backgroundColor: "#fbbf24",
-  paddingVertical: 12,
-  paddingHorizontal: 24,
-  borderRadius: 10,
-  marginTop: 16,
-  alignSelf: "center",
-  minWidth: 100,
-},
-
-founderCloseButton: {
-  position: "absolute",
-  top: 12,
-  right: 12,
-  zIndex: 10,
-  padding: 4,
-},
-founderCloseText: {
-  fontSize: 20,
-  color: "#fbbf24",
-  fontWeight: "bold",
-}
 });
