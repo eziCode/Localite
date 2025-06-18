@@ -91,7 +91,7 @@ export default function CreateGroupModal({ onClose, onGroupCreated }: CreateGrou
         return setError("Failed to retrieve created group. Try again.");
       }
 
-      uploadUserInteraction(user.id, group.id as number, "created_group", "group");
+      uploadUserInteraction(user.id, group.id, "created_group", "group");
       onGroupCreated();
       onClose();
     };
@@ -191,42 +191,42 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 70,
     paddingHorizontal: 24,
-    backgroundColor: "#fff8f2",
+    backgroundColor: "#FAFAFB", // light neutral background
   },
   title: {
     fontSize: 26,
     fontWeight: "700",
     marginBottom: 20,
-    color: "#3e2a2a",
+    color: "#1E1E1F",
   },
   errorBox: {
-    backgroundColor: "#ffe8e8",
+    backgroundColor: "rgba(255, 94, 91, 0.08)",
     padding: 10,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: "#ff5f5f",
+    borderLeftColor: "#FF5E5B",
     marginBottom: 12,
   },
   errorText: {
-    color: "#802020",
+    color: "#FF5E5B",
     fontSize: 14,
     fontWeight: "500",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#d9cce3",
+    borderColor: "#E2E2EA",
     borderRadius: 10,
     padding: 12,
     marginBottom: 14,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     fontSize: 16,
-    color: "#3e2a2a",
+    color: "#1E1E1F",
   },
   sectionLabel: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 6,
-    color: "#6a4e77",
+    color: "#3D3D4D",
   },
   vibeContainer: {
     flexDirection: "row",
@@ -235,75 +235,70 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   vibeChip: {
-    backgroundColor: "#f2ecf8",
+    backgroundColor: "#EFEFFE",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderColor: "#bba5d2",
+    borderColor: "#D6D6FA",
     borderWidth: 1,
   },
   vibeChipSelected: {
-    backgroundColor: "#7c5e99",
-    borderColor: "#7c5e99",
+    backgroundColor: "#6C4FF6",
+    borderColor: "#6C4FF6",
   },
   vibeChipText: {
-    color: "#7c5e99",
+    color: "#6C4FF6",
     fontWeight: "500",
   },
   vibeChipTextSelected: {
-    color: "#fff",
-  },
-  privacyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  privacyLabel: {
-    fontSize: 16,
-    color: "#444",
+    color: "#FFFFFF",
   },
   button: {
-    backgroundColor: "#7c5e99",
+    backgroundColor: "#6C4FF6",
     padding: 14,
     borderRadius: 10,
     marginBottom: 12,
+    shadowColor: "#6C4FF6",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     textAlign: "center",
     fontWeight: "600",
     fontSize: 16,
   },
   cancel: {
     textAlign: "center",
-    color: "#888",
+    color: "#666",
     marginTop: 12,
     fontSize: 15,
   },
   visibilityOptions: {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  gap: 8,
-  marginBottom: 20,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 20,
   },
   visibilityChip: {
-    backgroundColor: "#f2ecf8",
+    backgroundColor: "#EFEFFE",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderColor: "#bba5d2",
+    borderColor: "#D6D6FA",
     borderWidth: 1,
   },
   visibilityChipSelected: {
-    backgroundColor: "#7c5e99",
-    borderColor: "#7c5e99",
+    backgroundColor: "#6C4FF6",
+    borderColor: "#6C4FF6",
   },
   visibilityText: {
-    color: "#7c5e99",
+    color: "#6C4FF6",
     fontWeight: "500",
   },
   visibilityTextSelected: {
-    color: "#fff",
+    color: "#FFFFFF",
   },
 });
