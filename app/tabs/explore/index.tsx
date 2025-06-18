@@ -157,6 +157,7 @@ export default function Explore() {
             pathname: "/tabs/explore/inspect_event",
             params: {
               user: JSON.stringify(user),
+              event: JSON.stringify(item),
             },
           })
         }}

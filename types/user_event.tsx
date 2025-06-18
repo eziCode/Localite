@@ -12,4 +12,5 @@ export type UserEvent = {
     location_name: string;
     latitude: number;
     longitude: number;
+    upvotes: number;
 };
