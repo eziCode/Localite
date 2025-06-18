@@ -28,7 +28,7 @@ export default function GroupsPage() {
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequestWithGroup[]>([]);
   const [ownJoinRequests, setOwnJoinRequests] = useState<JoinRequestWithGroup[]>([]);
-  const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: number]: JoinRequestWithGroup[] }>({});
+  const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: string]: JoinRequestWithGroup[] }>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [inviteCodeError, setInviteCodeError] = useState("");
   const insets = useSafeAreaInsets();
@@ -79,7 +79,7 @@ export default function GroupsPage() {
   const fetchJoinRequests = async (userId: string) => {
     const { data, error } = await supabase
       .from("group_join_requests")
-      .select("*, group:group_id (name)")
+      .select("*, group:groups(name)")
       .eq("to_id", userId)
       .eq("status", "pending");
 
@@ -90,7 +90,7 @@ export default function GroupsPage() {
   const fetchOwnJoinRequests = async (userId: string) => {
     const { data, error } = await supabase
       .from("group_join_requests")
-      .select("*, group:group_id (name)")
+      .select("*, group:groups(name)")
       .eq("from_id", userId)
       .neq("status", "pending")
       .neq("acknowledged", true);
@@ -148,9 +148,9 @@ export default function GroupsPage() {
   }, []);
 
   useEffect(() => {
-    const grouped: { [groupId: number]: JoinRequestWithGroup[] } = {};
+    const grouped: { [groupId: string]: JoinRequestWithGroup[] } = {};
     for (const request of joinRequests) {
-      const groupId = Number(request.group_id);
+      const groupId = request.group_id;
       if (!grouped[groupId]) grouped[groupId] = [];
       grouped[groupId].push(request);
     }
@@ -354,7 +354,7 @@ export default function GroupsPage() {
                     router.push({
                       pathname: "/tabs/groups/group_join_requests",
                       params: {
-                        groupId: groupId.toString(),
+                        groupId: groupId,
                         groupName: requests[0].group.name,
                         requests: JSON.stringify(requests),
                         user: JSON.stringify(user),

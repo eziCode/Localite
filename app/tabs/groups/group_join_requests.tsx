@@ -23,9 +23,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
-configureReanimatedLogger({
-    strict: false
-});
+configureReanimatedLogger({ strict: false });
 
 const GroupJoinRequests = () => {
   const router = useRouter();
@@ -37,7 +35,6 @@ const GroupJoinRequests = () => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
-  // Combine both actions into one function for runOnJS
   const processSwipe = (id: string, status: string) => {
     updateSupabaseRequestStatus(id, status);
     goToNextCard();
@@ -101,7 +98,6 @@ const GroupJoinRequests = () => {
     }
 
     if (status === "accepted" && current?.from_id) {
-      // Use Postgres array_append to add user to members array
       const { error: updateError } = await supabase.rpc(
         "append_member_to_group_id_w_group_id_as_uuid",
         { group_id_input: groupId, user_id_input: current.from_id }
@@ -129,7 +125,6 @@ const GroupJoinRequests = () => {
   };
 
   const remaining = parsedRequests.length - currentIndex;
-
   const [usersRequestingToJoin, setUsersRequestingToJoin] = useState<PublicUser[]>([]);
 
   useEffect(() => {
@@ -148,9 +143,7 @@ const GroupJoinRequests = () => {
     fetchUserRequestingToJoin();
   }, [parsedRequests]);
 
-  // Fallback: If swiped past end, render empty container
   if (!parsedRequests[currentIndex]) {
-    // Reset animated values when done
     translateX.value = 0;
     translateY.value = 0;
     return (
@@ -181,7 +174,6 @@ const GroupJoinRequests = () => {
           {remaining} request{remaining > 1 ? "s" : ""} remaining for {groupName}
         </Text>
         <View style={styles.cardContainer}>
-          {/* Only render GestureDetector if current exists */}
           <GestureDetector gesture={pan}>
             <Animated.View style={[styles.card, animatedStyle]}>
               {(() => {
@@ -239,7 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#fafafa",
   },
   backButton: {
     position: "absolute",
@@ -258,7 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
-    color: "#333",
+    color: "#3a3a3a",
     paddingHorizontal: 40,
   },
   cardContainer: {
@@ -268,22 +260,17 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: "#faf0f8",
+    backgroundColor: "#f3e8ff",
     borderRadius: 16,
     padding: 28,
     width: SCREEN_WIDTH - 32,
-    height: SCREEN_HEIGHT * 0.55, // Big card
+    height: SCREEN_HEIGHT * 0.55,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
     elevation: 4,
-  },
-  requestText: {
-    fontSize: 18,
-    textAlign: "center",
-    color: "#3a3a3a",
   },
   actionRow: {
     flexDirection: "row",
@@ -292,7 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   rejectButton: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#f43f5e",
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 10,
@@ -308,110 +295,82 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
-  doneText: {
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
-    marginTop: 100,
-    color: "#7c3aed",
+  userCard: {
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  userNameText: {
-  marginTop: 12,
-  fontSize: 16,
-  fontWeight: "500",
-  color: "#4b5563", // muted gray
-},
-
-userAgeText: {
-  fontSize: 15,
-  color: "#6b7280",
-},
-userCard: {
-  alignItems: "center",
-  padding: 20,
-  backgroundColor: "#fff",
-  borderRadius: 12,
-  width: "100%",
-  shadowColor: "#000",
-  shadowOpacity: 0.05,
-  shadowRadius: 6,
-  elevation: 3,
-},
-
-avatar: {
-  width: 80,
-  height: 80,
-  borderRadius: 40,
-  backgroundColor: "#d8b4fe",
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: 12,
-},
-
-avatarText: {
-  fontSize: 28,
-  color: "#6b21a8",
-  fontWeight: "bold",
-},
-
-userName: {
-  fontSize: 20,
-  fontWeight: "600",
-  color: "#333",
-  marginBottom: 4,
-},
-
-userAge: {
-  fontSize: 16,
-  color: "#6b7280",
-  marginBottom: 12,
-},
-
-messageBox: {
-  backgroundColor: "#f3e8ff",
-  padding: 16,
-  borderRadius: 8,
-  marginTop: 8,
-},
-
-messageText: {
-  fontSize: 16,
-  fontStyle: "italic",
-  color: "#4b5563",
-  textAlign: "center",
-},
-doneContainer: {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-},
-
-doneCard: {
-  backgroundColor: "#f0f9ff",
-  padding: 24,
-  borderRadius: 16,
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
-  shadowRadius: 8,
-  elevation: 4,
-  alignItems: "center",
-  maxWidth: SCREEN_WIDTH * 0.8,
-},
-
-doneTitle: {
-  fontSize: 22,
-  fontWeight: "700",
-  color: "#0f172a",
-  marginBottom: 8,
-  textAlign: "center",
-},
-
-doneSubtitle: {
-  fontSize: 16,
-  color: "#334155",
-  textAlign: "center",
-},
-
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#d8b4fe",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  avatarText: {
+    fontSize: 28,
+    color: "#6b21a8",
+    fontWeight: "bold",
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 4,
+  },
+  userAge: {
+    fontSize: 16,
+    color: "#6b7280",
+    marginBottom: 12,
+  },
+  messageBox: {
+    backgroundColor: "#ede9fe",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  messageText: {
+    fontSize: 16,
+    fontStyle: "italic",
+    color: "#4b5563",
+    textAlign: "center",
+  },
+  doneContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  doneCard: {
+    backgroundColor: "#f0f9ff",
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    alignItems: "center",
+    maxWidth: SCREEN_WIDTH * 0.8,
+  },
+  doneTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  doneSubtitle: {
+    fontSize: 16,
+    color: "#334155",
+    textAlign: "center",
+  },
 });
 
 export default GroupJoinRequests;
