@@ -4,13 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,7 +25,6 @@ const ShowAllGroups = () => {
 
   const [groupsToDisplay, setGroupsToDisplay] = useState<Group[]>(initialGroups);
   const [page, setPage] = useState(initialPage);
-
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
@@ -53,6 +52,7 @@ const ShowAllGroups = () => {
         });
 
         if (!data || data.length < PAGE_SIZE) setHasMore(false);
+
       } else if (type === 'suggested') {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -79,8 +79,14 @@ const ShowAllGroups = () => {
 
         if (groupError) throw groupError;
 
-        const filteredGroups = groups?.filter(group => !blockedGroupIds.has(group.id)) || [];
-        setGroupsToDisplay(prev => [...prev, ...filteredGroups]);
+        const filteredGroups = (groups || []).filter(group => !blockedGroupIds.has(group.id));
+
+        setGroupsToDisplay(prev => {
+          const existingIds = new Set(prev.map(g => g.id));
+          const uniqueGroups = filteredGroups.filter(g => !existingIds.has(g.id));
+          return [...prev, ...uniqueGroups];
+        });
+
         if (!groups || groups.length < PAGE_SIZE) setHasMore(false);
       }
     } catch (err) {
@@ -92,19 +98,20 @@ const ShowAllGroups = () => {
 
   useEffect(() => {
     fetchRemainingGroups(page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleNavigate = (group: Group) => {
     if (type === 'user') {
-        router.push({ 
-          pathname: "/tabs/groups/own_groups_view", 
-          params: { group: JSON.stringify(group), user: JSON.stringify(user) } 
-        });
+      router.push({
+        pathname: "/tabs/groups/own_groups_view",
+        params: { group: JSON.stringify(group), user: JSON.stringify(user) }
+      });
     } else {
-        router.push({ 
-          pathname: "/tabs/groups/foreign_groups_view", 
-          params: { group: JSON.stringify(group), user: JSON.stringify(user) } 
-        });
+      router.push({
+        pathname: "/tabs/groups/foreign_groups_view",
+        params: { group: JSON.stringify(group), user: JSON.stringify(user) }
+      });
     }
   };
 
@@ -133,7 +140,9 @@ const ShowAllGroups = () => {
               onPress={() => handleNavigate(item)}
             >
               <Text style={styles.groupName}>{item.name}</Text>
-              <Text style={styles.groupDesc} numberOfLines={1}>{item.description || 'No description'}</Text>
+              <Text style={styles.groupDesc} numberOfLines={1}>
+                {item.description || 'No description'}
+              </Text>
             </Pressable>
           )}
           contentContainerStyle={{ padding: 16 }}
