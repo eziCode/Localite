@@ -205,8 +205,8 @@ export default function OwnGroupsView() {
   // If join code is present, display text box with join code and button to copy it (maybe add a button to share to other platforms)
   // Only show the join code if the user is the founder or a leader of the group
 
-// Helper to check if current user is founder or leader
-const canPromoteDemote = user.id === founder || leaders.includes(user.id);
+  // Helper to check if current user is founder or leader
+  const canPromoteDemote = user.id === founder || leaders.includes(user.id);
 
   return (
     <>
