@@ -4,13 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const InspectEvent = () => {
@@ -123,7 +123,8 @@ const InspectEvent = () => {
       {/* Fixed Header */}
       <View style={styles.fixedHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
+          <Ionicons name="arrow-back" size={20} color="#333" />
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
 
@@ -339,12 +340,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.95)',
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#f1f2f6',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    width: 70,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f2f6',
+    justifyContent: 'flex-start',
+    paddingLeft: 10,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 6,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
