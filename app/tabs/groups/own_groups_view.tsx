@@ -150,7 +150,7 @@ export default function OwnGroupsView() {
       {/* Fixed Header */}
       <SafeAreaView edges={['top']} style={styles.fixedHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={20} color="#333" />
+          <Ionicons name="arrow-back" size={20} color="#7c3aed" />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -520,21 +520,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 16,
     paddingLeft: 16,
-    // No marginTop or paddingTop here!
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F1F1F3',
+    backgroundColor: '#ede9fe', // light purple
     justifyContent: 'flex-start',
     paddingHorizontal: 14,
     alignSelf: 'flex-start',
   },
   backButtonText: {
     fontSize: 16,
-    color: '#1E1E1F',
+    color: '#7c3aed', // deep purple
     marginLeft: 6,
     fontWeight: '600',
   },
@@ -609,7 +608,7 @@ const styles = StyleSheet.create({
   },
   arrowButtonText: {
     fontSize: 25,
-    color: "#7c3aed",
+    color: '#7c3aed', // deep purple for the arrow
   },
   postButton: {
     backgroundColor: "#7c3aed",
