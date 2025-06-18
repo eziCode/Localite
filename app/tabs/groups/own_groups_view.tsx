@@ -141,7 +141,7 @@ export default function OwnGroupsView() {
 
   const kickGroupMember = async (userId: string) => {
     const { error } = await supabase.rpc(
-      "kick_group_member", 
+      "kick_group_member_with_group_id_as_uuid", 
       { member_to_remove: userId, group_to_edit: group.id }
     );
     if (error) {
@@ -166,7 +166,7 @@ export default function OwnGroupsView() {
 
   const leaveGroup = async (userId: string) => {
     const { error } = await supabase.rpc(
-      "leave_group", 
+      "leave_group_w_group_id_as_uuid", 
       { user_id: userId, group_id: group.id }
     );
     if (error) {

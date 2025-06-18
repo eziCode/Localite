@@ -156,7 +156,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
     const pushEvent = async () => {
 
-      const { data, error } = await supabase.rpc("average_group_age", { group_id: current_group?.id || null });
+      const { data, error } = await supabase.rpc("average_group_age_w_group_id_as_uuid", { group_id: current_group?.id || null });
       if (error) {
         console.error("Error fetching average age:", error);
         return;

@@ -103,7 +103,7 @@ const GroupJoinRequests = () => {
     if (status === "accepted" && current?.from_id) {
       // Use Postgres array_append to add user to members array
       const { error: updateError } = await supabase.rpc(
-        "append_member_to_group_id_is_int",
+        "append_member_to_group_id_w_group_id_as_uuid",
         { group_id_input: groupId, user_id_input: current.from_id }
       );
       if (updateError) {
