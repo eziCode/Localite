@@ -241,6 +241,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 16,
     backgroundColor: 'rgba(250,250,251,0.95)',
+    marginTop: 18, // Increased space from the top (clock)
+    paddingLeft: 16, // Added left padding for space from the left edge
   },
   backButton: {
     flexDirection: 'row',
