@@ -13,6 +13,6 @@ export type UserEvent = {
     min_age: number;
     max_age: number;
     latitude: number;
-    0: number;
+    longitude: number;
     upvotes: number;
 };
