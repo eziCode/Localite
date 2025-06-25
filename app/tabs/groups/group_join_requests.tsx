@@ -93,18 +93,20 @@ const GroupJoinRequests = () => {
 
   const acceptIndicatorStyle = useAnimatedStyle(() => ({
     position: "absolute",
-    top: 20,
-    left: 20,
+    top: 30,
+    left: 30,
     opacity: opacityAccept.value,
     transform: [{ scale: 1 + opacityAccept.value * 0.2 }],
+    zIndex: 10,
   }));
 
   const rejectIndicatorStyle = useAnimatedStyle(() => ({
     position: "absolute",
-    top: 20,
-    right: 20,
+    top: 30,
+    right: 30,
     opacity: opacityReject.value,
     transform: [{ scale: 1 + opacityReject.value * 0.2 }],
+    zIndex: 10,
   }));
 
   const updateSupabaseRequestStatus = async (requestId: string, status: string) => {
@@ -176,8 +178,9 @@ const GroupJoinRequests = () => {
         </TouchableOpacity>
         <View style={styles.doneContainer}>
           <View style={styles.doneCard}>
-            <Text style={styles.doneTitle}>No more requests</Text>
-            <Text style={styles.doneSubtitle}>You&apos;ve reviewed all join requests for this group 🥳</Text>
+            <Text style={styles.doneEmoji}>🎉</Text>
+            <Text style={styles.doneTitle}>All Done!</Text>
+            <Text style={styles.doneSubtitle}>You&apos;ve reviewed all join requests for this group</Text>
           </View>
         </View>
       </View>
@@ -192,10 +195,14 @@ const GroupJoinRequests = () => {
           <Text style={styles.backButtonText}>×</Text>
         </TouchableOpacity>
 
-        <Text style={styles.headerText}>
-          {remaining} request{remaining > 1 ? "s" : ""} remaining for {groupName}
-        </Text>
-        <Text style={styles.subText}>Swipe right to accept ✅ • Swipe left to reject ❌</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>
+            {remaining} request{remaining > 1 ? "s" : ""} remaining
+          </Text>
+          <Text style={styles.groupName}>{groupName}</Text>
+          <Text style={styles.subText}>Swipe right to accept • Swipe left to reject</Text>
+        </View>
+
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBarFill, { width: `${(currentIndex / parsedRequests.length) * 100}%` }]} />
         </View>
@@ -203,8 +210,12 @@ const GroupJoinRequests = () => {
         <View style={styles.cardContainer}>
           <GestureDetector gesture={pan}>
             <Animated.View style={[styles.card, animatedStyle]}>
-              <Animated.Text style={[styles.indicatorText, acceptIndicatorStyle]}>✅</Animated.Text>
-              <Animated.Text style={[styles.indicatorText, rejectIndicatorStyle]}>❌</Animated.Text>
+              <Animated.View style={[styles.indicatorContainer, acceptIndicatorStyle]}>
+                <Text style={styles.acceptIndicator}>✓</Text>
+              </Animated.View>
+              <Animated.View style={[styles.indicatorContainer, rejectIndicatorStyle]}>
+                <Text style={styles.rejectIndicator}>✕</Text>
+              </Animated.View>
               {(() => {
                 const user = usersRequestingToJoin.find(
                   (u) => u.user_id === current.from_id
@@ -229,25 +240,30 @@ const GroupJoinRequests = () => {
                           params: { userToInspectId: user.user_id },
                         })
                       }
+                      style={styles.nameButton}
                     >
                       <Text style={styles.userName}>{user.user_name}</Text>
                     </TouchableOpacity>
-                    <Text style={styles.userAge}>Age: {user.age}</Text>
-                    <View style={styles.messageBox}>
-                      <Text style={styles.messageText}>&quot;{current.message}&quot;</Text>
-                    </View>
+                    <Text style={styles.userAge}>Age {user.age}</Text>
+                    {current.message && (
+                      <View style={styles.messageBox}>
+                        <Text style={styles.messageLabel}>Message:</Text>
+                        <Text style={styles.messageText}>&quot;{current.message}&quot;</Text>
+                      </View>
+                    )}
                   </View>
                 );
               })()}
             </Animated.View>
           </GestureDetector>
         </View>
+
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.rejectButton} onPress={handleReject}>
-            <Text style={styles.actionText}>Reject</Text>
+            <Text style={styles.rejectButtonText}>✕ Reject</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
-            <Text style={styles.actionText}>Accept</Text>
+            <Text style={styles.acceptButtonText}>✓ Accept</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -258,181 +274,256 @@ const GroupJoinRequests = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 64,
-    paddingHorizontal: 20,
-    backgroundColor: "#fdfdfd",
+    backgroundColor: "#f8fafc",
   },
   backButton: {
     position: "absolute",
     top: 60,
     left: 24,
-    zIndex: 10,
+    zIndex: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   backButtonText: {
-    fontSize: 32,
-    color: "#7c3aed",
-    fontWeight: "700",
+    fontSize: 24,
+    color: "#64748b",
+    fontWeight: "600",
+  },
+  header: {
+    paddingTop: 80,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    alignItems: "center",
   },
   headerText: {
-    marginTop: 20,
-    marginBottom: 6,
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#475569",
+    marginBottom: 4,
+  },
+  groupName: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1e293b",
     textAlign: "center",
-    color: "#2e1065",
+    marginBottom: 12,
   },
   subText: {
-    fontSize: 14,
-    color: "#6b7280",
+    fontSize: 16,
+    color: "#64748b",
     textAlign: "center",
-    marginBottom: 10,
   },
   progressBarContainer: {
-    height: 6,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 3,
+    height: 4,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 2,
+    marginHorizontal: 32,
+    marginBottom: 32,
     overflow: "hidden",
-    marginHorizontal: 20,
-    marginBottom: 20,
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: "#a78bfa",
-    borderRadius: 3,
-  },
-  indicatorText: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#10b981",
+    backgroundColor: "#3b82f6",
+    borderRadius: 2,
   },
   cardContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: "#f5f3ff",
-    borderRadius: 20,
-    padding: 28,
-    width: SCREEN_WIDTH - 36,
-    height: SCREEN_HEIGHT * 0.58,
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    width: SCREEN_WIDTH - 40,
+    maxHeight: SCREEN_HEIGHT * 0.6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 12,
+    overflow: "hidden",
+  },
+  indicatorContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 6,
+  },
+  acceptIndicator: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#ffffff",
+    backgroundColor: "#10b981",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    textAlign: "center",
+    textAlignVertical: "center",
+    lineHeight: 60,
+  },
+  rejectIndicator: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#ffffff",
+    backgroundColor: "#ef4444",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    textAlign: "center",
+    textAlignVertical: "center",
+    lineHeight: 60,
   },
   userCard: {
     alignItems: "center",
-    padding: 20,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
+    padding: 40,
     width: "100%",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#e4e4e7",
   },
   avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: "#e9d5ff",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#f1f5f9",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 14,
-    borderWidth: 2,
-    borderColor: "#a855f7",
+    marginBottom: 24,
+    borderWidth: 4,
+    borderColor: "#e2e8f0",
   },
   avatarText: {
-    fontSize: 30,
-    color: "#6b21a8",
-    fontWeight: "bold",
+    fontSize: 36,
+    color: "#475569",
+    fontWeight: "700",
+  },
+  nameButton: {
+    marginBottom: 8,
   },
   userName: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "700",
-    color: "#1e1b4b",
-    marginBottom: 2,
+    color: "#1e293b",
+    textAlign: "center",
   },
   userAge: {
-    fontSize: 15,
-    color: "#71717a",
-    marginBottom: 12,
+    fontSize: 18,
+    color: "#64748b",
+    marginBottom: 24,
+    fontWeight: "500",
   },
   messageBox: {
-    backgroundColor: "#f3e8ff",
-    padding: 14,
-    borderRadius: 10,
-    marginTop: 10,
+    backgroundColor: "#f8fafc",
+    padding: 20,
+    borderRadius: 16,
     width: "100%",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  messageLabel: {
+    fontSize: 14,
+    color: "#64748b",
+    fontWeight: "600",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   messageText: {
-    fontSize: 15,
+    fontSize: 16,
+    color: "#334155",
+    lineHeight: 24,
     fontStyle: "italic",
-    color: "#4b5563",
-    textAlign: "center",
   },
   actionRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    marginBottom: 40,
+    paddingHorizontal: 32,
+    paddingBottom: 48,
     gap: 16,
   },
   rejectButton: {
-    backgroundColor: "#f87171",
-    paddingVertical: 14,
+    backgroundColor: "#ef4444",
+    paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 16,
     flex: 1,
+    shadowColor: "#ef4444",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   acceptButton: {
-    backgroundColor: "#4ade80",
-    paddingVertical: 14,
+    backgroundColor: "#10b981",
+    paddingVertical: 18,
     paddingHorizontal: 32,
-    borderRadius: 12,
+    borderRadius: 16,
     flex: 1,
+    shadowColor: "#10b981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  actionText: {
+  rejectButtonText: {
     color: "white",
     fontWeight: "700",
-    fontSize: 16,
+    fontSize: 18,
+    textAlign: "center",
+  },
+  acceptButtonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 18,
     textAlign: "center",
   },
   doneContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 32,
   },
   doneCard: {
-    backgroundColor: "#ecfeff",
-    padding: 28,
-    borderRadius: 20,
+    backgroundColor: "#ffffff",
+    padding: 48,
+    borderRadius: 24,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 12,
     alignItems: "center",
-    maxWidth: SCREEN_WIDTH * 0.85,
-    borderWidth: 1,
-    borderColor: "#bae6fd",
+    width: "100%",
+    maxWidth: 320,
+  },
+  doneEmoji: {
+    fontSize: 64,
+    marginBottom: 24,
   },
   doneTitle: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 10,
+    color: "#1e293b",
+    marginBottom: 16,
     textAlign: "center",
   },
   doneSubtitle: {
-    fontSize: 16,
-    color: "#334155",
+    fontSize: 18,
+    color: "#64748b",
     textAlign: "center",
+    lineHeight: 26,
   },
 });
 
