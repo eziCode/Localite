@@ -98,6 +98,7 @@ const ShowAllGroups = () => {
 
   useEffect(() => {
     fetchRemainingGroups(page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleNavigate = (group: Group) => {
