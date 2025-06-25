@@ -157,7 +157,7 @@ export default function OwnGroupsView() {
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingBottom: 80, paddingTop: 100 }
+          { paddingBottom: 80, paddingTop: 55 }
         ]}
         keyboardShouldPersistTaps="handled"
       >
