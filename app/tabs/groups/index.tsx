@@ -300,7 +300,9 @@ export default function GroupsPage() {
 
           {Object.entries(groupedJoinRequests).length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Join Requests</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Pending Join Requests</Text>
+              </View>
               {Object.entries(groupedJoinRequests).map(([groupId, requests], i) => (
                 <Animated.View entering={FadeInUp.delay(i * 60)} key={groupId}>
                   <TouchableOpacity
@@ -326,7 +328,9 @@ export default function GroupsPage() {
 
           {ownJoinRequests.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Join Request Results</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Join Request Results</Text>
+              </View>
               {ownJoinRequests.map((result, i) => (
                 <Animated.View entering={FadeInUp.delay(i * 60)} key={result.id}>
                   <View style={styles.resultCard}>
@@ -352,7 +356,9 @@ export default function GroupsPage() {
             </>
           )}
 
-          <Text style={styles.sectionTitle}>Join by Invite Code</Text>
+          <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Join by Invite Code</Text>
+              </View>
           <View style={styles.inviteRow}>
             <TextInput
               placeholder="Enter invite code"
