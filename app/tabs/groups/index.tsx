@@ -4,15 +4,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  FlatList,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import Animated, { Easing, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
@@ -28,108 +28,101 @@ export default function GroupsPage() {
   const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequestWithGroup[]>([]);
   const [ownJoinRequests, setOwnJoinRequests] = useState<JoinRequestWithGroup[]>([]);
-  const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: number]: JoinRequestWithGroup[] }>({});
+  const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: string]: JoinRequestWithGroup[] }>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [inviteCodeError, setInviteCodeError] = useState("");
+  const [loadingUserGroups, setLoadingUserGroups] = useState(true);
+  const [loadingSuggestedGroups, setLoadingSuggestedGroups] = useState(true);
   const insets = useSafeAreaInsets();
 
+  const spinAnimation = useSharedValue(0);
+
+  useEffect(() => {
+    spinAnimation.value = withRepeat(
+      withTiming(1, {
+        duration: 1000,
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${spinAnimation.value * 360}deg` }],
+    };
+  });
+
   const fetchUserGroups = async (userId: string) => {
+    setLoadingUserGroups(true);
     const { data, error } = await supabase
       .from("groups")
       .select("*")
       .filter("members", "cs", JSON.stringify([userId]))
-      .limit(MAX_GROUPS_TO_SHOW + 1); // Fetch one extra to check if more exist
-
+      .limit(MAX_GROUPS_TO_SHOW + 1);
     if (error) console.error(error);
     else setUserGroups(data);
+    setLoadingUserGroups(false);
   };
 
   const fetchSuggestedGroups = async (userId: string) => {
+    setLoadingSuggestedGroups(true);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-    const { data: requests, error: requestError } = await supabase
+    const { data: requests } = await supabase
       .from("group_join_requests")
       .select("group_id, status, created_at")
       .eq("from_id", userId)
       .limit(MAX_GROUPS_TO_SHOW + 1);
 
-    if (requestError) {
-      console.error("Error fetching join requests:", requestError);
-      return;
-    }
-
     const blockedGroupIds = new Set(
       requests?.filter(req =>
-        req.status === "pending" ||
-        (req.created_at && new Date(req.created_at) > oneWeekAgo)
+        req.status === "pending" || (req.created_at && new Date(req.created_at) > oneWeekAgo)
       ).map(req => req.group_id)
     );
 
-    const { data: groups, error: groupError } = await supabase
+    const { data: groups, error } = await supabase
       .from("groups")
       .select("*")
       .not("members", "cs", JSON.stringify([userId]))
-      .neq("visibility", "hidden");
-
-    if (groupError) console.error(groupError);
-    else setSuggestedGroups(groups.filter(group => !blockedGroupIds.has(group.id)));
+      .not("id", "in", `(${Array.from(blockedGroupIds).join(",")})`)
+      .neq("visibility", "hidden")
+      .limit(MAX_GROUPS_TO_SHOW + 1);
+    if (error) console.error(error);
+    else setSuggestedGroups(groups);
+    setLoadingSuggestedGroups(false);
   };
 
   const fetchJoinRequests = async (userId: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("group_join_requests")
-      .select("*, group:group_id (name)")
+      .select("*, group:groups(name)")
       .eq("to_id", userId)
       .eq("status", "pending");
-
-    if (error) console.error("Error fetching join requests:", error);
-    else setJoinRequests(data);
+    setJoinRequests(data ?? []);
   };
 
   const fetchOwnJoinRequests = async (userId: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("group_join_requests")
-      .select("*, group:group_id (name)")
+      .select("*, group:groups(name)")
       .eq("from_id", userId)
       .neq("status", "pending")
       .neq("acknowledged", true);
-
-    if (error) console.error("Error fetching own join requests:", error);
-    else setOwnJoinRequests(data);
+    setOwnJoinRequests(data ?? []);
   };
 
   const handleDismissResult = async (id: number) => {
     const request = ownJoinRequests.find((r) => r.id === id);
     if (!request) return;
-
-    const { status } = request;
-
-    if (status === "accepted") {
-      // Delete the accepted join request
-      const { error: deleteError } = await supabase
-        .from("group_join_requests")
-        .delete()
-        .eq("id", id);
-
-      if (deleteError) {
-        console.error("Error deleting accepted request:", deleteError);
-        return;
-      }
+    if (request.status === "accepted") {
+      await supabase.from("group_join_requests").delete().eq("id", id);
       fetchUserGroups(user?.id!);
-    } else if (status === "rejected") {
-      // Set the acknowledged status to true
-      const { error: acknowledgeError } = await supabase
-        .from("group_join_requests")
-        .update({ acknowledged: true })
-        .eq("id", id);
-
-        if (acknowledgeError) {
-          console.error("Error acknowledging rejected request:", acknowledgeError);
-          return;
-        }
+    } else if (request.status === "rejected") {
+      await supabase.from("group_join_requests").update({ acknowledged: true }).eq("id", id);
     }
-    // If status is rejected, just remove from UI. Trigger handles DB cleanup later.
     setOwnJoinRequests((prev) => prev.filter((req) => req.id !== id));
   };
 
@@ -148,260 +141,219 @@ export default function GroupsPage() {
   }, []);
 
   useEffect(() => {
-    const grouped: { [groupId: number]: JoinRequestWithGroup[] } = {};
+    const grouped: { [groupId: string]: JoinRequestWithGroup[] } = {};
     for (const request of joinRequests) {
-      const groupId = Number(request.group_id);
-      if (!grouped[groupId]) grouped[groupId] = [];
-      grouped[groupId].push(request);
+      if (!grouped[request.group_id]) grouped[request.group_id] = [];
+      grouped[request.group_id].push(request);
     }
     setGroupedJoinRequests(grouped);
   }, [joinRequests]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchOnFocus = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        if (user) {
-          fetchUserGroups(user.id);
-          fetchSuggestedGroups(user.id);
-          fetchJoinRequests(user.id);
-        }
-      };
-      fetchOnFocus();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => {
+    const fetchOnFocus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (user) {
+        fetchUserGroups(user.id);
+        fetchSuggestedGroups(user.id);
+        fetchJoinRequests(user.id);
+      }
+    };
+    fetchOnFocus();
+  }, []));
 
   const handleJoinByCode = async () => {
     const trimmedCode = inviteCode.trim();
-    const { data, error } = await supabase
-      .from("groups")
-      .select("*")
-      .eq("join_code", trimmedCode)
-      .single();
-
-    if (error) {
-      console.error("Error fetching group by invite code:", error);
-      return;
+    const { data, error } = await supabase.from("groups").select("*").eq("join_code", trimmedCode).single();
+    if (error || !data) return setInviteCodeError("Invalid code.");
+    const groupToJoin = data as Group;
+    if (userGroups.some((g) => g.id === groupToJoin.id)) {
+      return setInviteCodeError("You're already a member.");
     }
-
-    if (!data) {
-      setInviteCodeError("No group found with that invite code.");
-      return;
+    const { error: joinError } = await supabase.rpc("append_member_to_group_id_is_int", {
+      group_id_input: groupToJoin?.id,
+      user_id_input: user?.id,
+    });
+    if (!joinError) {
+      uploadUserInteraction(user?.id!, groupToJoin.id, "joined_group_by_code", "group");
+      if (user?.id) groupToJoin.members = [...(groupToJoin.members), user.id];
+      setUserGroups((prev) => [...prev, groupToJoin]);
+      setInviteCode("");
+      setInviteCodeError("");
     }
-
-    let groupToJoin: Group = data as Group;
-
-    if (userGroups.some((group) => group.id === groupToJoin.id)) {
-      setInviteCodeError("You are already a member of this group.");
-      return;
-    }
-
-    const { error: updateError } = await supabase.rpc(
-      "append_member_to_group_id_is_int",
-      { group_id_input: groupToJoin?.id, user_id_input: user?.id }
-    );
-
-    if (updateError) {
-      console.error("Error joining group by invite code:", updateError);
-      return;
-    }
-
-    uploadUserInteraction(user?.id!, groupToJoin.id, "joined_group_by_code", "group");
-
-    // Refresh groups after joining
-    if (user?.id) {
-      groupToJoin.members = [...(groupToJoin.members), user.id];
-    }
-    setUserGroups((prev) => [...prev, groupToJoin]);
-    setInviteCode("");
   };
 
-  async function handleRefreshGroups(): Promise<void> {
-    if (user) {
-      await fetchUserGroups(user.id);
-      await fetchSuggestedGroups(user.id);
-      await fetchJoinRequests(user.id);
-    }
-  }
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fafafa" }}>
-        {/* Profile Icon Button */}
+      <SafeAreaView style={styles.safeArea}>
         <TouchableOpacity
-          style={[
-            styles.profileIconButton,
-            { top: insets.top + 8, right: insets.right + 12 }
-          ]}
-          onPress={() =>
-            router.push({
-              pathname: "/tabs/groups/profile",
-              params: {
-                user: JSON.stringify(user),
-                groups: JSON.stringify(userGroups),
-              },
-            })
-          }
-          activeOpacity={0.7}
+          style={[styles.profileIconButton, { top: insets.top + 8 }]}
+          onPress={() => router.push({
+            pathname: "/tabs/groups/profile",
+            params: {
+              user: JSON.stringify(user),
+              groups: JSON.stringify(userGroups),
+            },
+          })}
         >
-          <Ionicons name="person-circle-outline" size={32} color="#7c5e99" />
+          <Ionicons name="person-circle-outline" size={32} color="#6C4FF6" />
         </TouchableOpacity>
 
-        <ScrollView style={styles.container}>
-          {/* Your Groups Section */}
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text style={styles.title}>Your Groups</Text>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.pageTitle}>Groups</Text>
+
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Your Groups</Text>
             {userGroups.length > MAX_GROUPS_TO_SHOW && (
               <TouchableOpacity
-                onPress={() => {
-                    router.push({ 
-                      pathname: "/tabs/groups/show_all_groups",
-                      params: { groupsAlreadyFetched: JSON.stringify(userGroups), user: JSON.stringify(user), type: "user" } 
-                    });
-                  }}
-                style={{ padding: 4 }}
-                hitSlop={8}
+                style={styles.sectionChevron}
+                onPress={() => router.push({
+                  pathname: "/tabs/groups/show_all_groups",
+                  params: {
+                    groupsAlreadyFetched: JSON.stringify(userGroups),
+                    user: JSON.stringify(user),
+                    type: 'user',
+                  },
+                })}
               >
-                <Ionicons name="chevron-forward" size={24} color="#7c5e99" />
+                <Ionicons name="chevron-forward-circle" size={26} color="#6C4FF6" />
               </TouchableOpacity>
             )}
           </View>
-          {/* Only show up to MAX_GROUPS_TO_SHOW */}
-          {userGroups.length === 0 ? (
-            <Text style={styles.subText}>No groups yet.</Text>
+
+          {loadingUserGroups ? (
+            <Animated.View style={[styles.loadingContainer, animatedStyle]}>
+              <Ionicons name="sync" size={24} color="#6C4FF6" />
+            </Animated.View>
+          ) : userGroups.length === 0 ? (
+            <Text style={styles.noGroupsText}>No groups joined yet</Text>
           ) : (
-            <FlatList
-              data={userGroups.slice(0, MAX_GROUPS_TO_SHOW)}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              renderItem={({ item }) => (
+            userGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
+              <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
                 <TouchableOpacity
-                onPress={() => {
-                  router.push({ 
-                    pathname: "/tabs/groups/own_groups_view", 
-                    params: { group: JSON.stringify(item), user: JSON.stringify(user) } 
-                  });
-                  if (user?.id) {
-                    uploadUserInteraction(user.id, item.id, "viewed_personal_group", "group");
-                  }
-                }}
-                style={styles.card}>
-                  <Text style={styles.groupName}>{item.name}</Text>
-                  <Text style={styles.groupMeta}>{item.members?.length ?? 0} {item.members?.length === 1 ? "member" : "members"}</Text>
+                  onPress={() => router.push({
+                    pathname: "/tabs/groups/own_groups_view",
+                    params: { group: JSON.stringify(group), user: JSON.stringify(user) },
+                  })}
+                  style={styles.card}
+                >
+                  <View style={styles.accent} />
+                  <View style={styles.cardContent}>
+                    <Text style={styles.groupName}>{group.name}</Text>
+                    <Text style={styles.groupMeta}>
+                      {group.members?.length ?? 0} {group.members?.length === 1 ? "member" : "members"}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
-              )}
-            />
+              </Animated.View>
+            ))
           )}
 
           <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.createButton}>
             <Text style={styles.createButtonText}>+ Create New Group</Text>
           </TouchableOpacity>
 
-          {/* Suggested Groups Section */}
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Text style={styles.title}>Suggested Groups</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Suggested Groups</Text>
             {suggestedGroups.length > MAX_GROUPS_TO_SHOW && (
               <TouchableOpacity
-                onPress={() => {
-                    router.push({ 
-                      pathname: "/tabs/groups/show_all_groups",
-                      params: { groupsAlreadyFetched: JSON.stringify(suggestedGroups), user: JSON.stringify(user), type: "suggested" } 
-                    });
-                  }}
-                style={{ padding: 4 }}
-                hitSlop={8}
+                style={styles.sectionChevron}
+                onPress={() => router.push({
+                  pathname: "/tabs/groups/show_all_groups",
+                  params: {
+                    groupsAlreadyFetched: JSON.stringify(suggestedGroups),
+                    user: JSON.stringify(user),
+                    type: 'foreign',
+                  },
+                })}
               >
-                <Ionicons name="chevron-forward" size={24} color="#7c5e99" />
+                <Ionicons name="chevron-forward-circle" size={26} color="#6C4FF6" />
               </TouchableOpacity>
             )}
           </View>
-          {/* Only show up to MAX_GROUPS_TO_SHOW */}
-          {suggestedGroups.length === 0 ? (
-            <Text style={styles.subText}>No suggested groups at this time.</Text>
+
+          {loadingSuggestedGroups ? (
+            <Animated.View style={[styles.loadingContainer, animatedStyle]}>
+              <Ionicons name="sync" size={24} color="#6C4FF6" />
+            </Animated.View>
+          ) : suggestedGroups.length === 0 ? (
+            <Text style={styles.noGroupsText}>No suggested groups found</Text>
           ) : (
-            <FlatList
-              data={suggestedGroups.slice(0, MAX_GROUPS_TO_SHOW)}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              renderItem={({ item }) => (
+            suggestedGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
+              <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
                 <TouchableOpacity
-                  onPress={() => {
-                    router.push({ 
-                      pathname: "/tabs/groups/foreign_groups_view", 
-                      params: { group: JSON.stringify(item), user: JSON.stringify(user) } 
-                    });
-                    if (user?.id) {
-                      uploadUserInteraction(user.id, item.id, "viewed_foreign_group", "group");
-                    }
-                  }}
-                  style={styles.suggestedGroup}
+                  onPress={() => router.push({
+                    pathname: "/tabs/groups/foreign_groups_view",
+                    params: { group: JSON.stringify(group), user: JSON.stringify(user) },
+                  })}
+                  style={styles.cardAlt}
                 >
-                  <Text style={styles.groupName}>{item.name}</Text>
-                  <Text style={styles.groupMeta}>{item.members?.length ?? 0} {item.members?.length === 1 ? "member" : "members"}</Text>
+                  <Text style={styles.groupName}>{group.name}</Text>
+                  <Text style={styles.groupMeta}>
+                    {group.members?.length ?? 0} {group.members?.length === 1 ? "member" : "members"}
+                  </Text>
                 </TouchableOpacity>
-              )}
-            />
+              </Animated.View>
+            ))
           )}
 
           {Object.entries(groupedJoinRequests).length > 0 && (
             <>
-              <Text style={styles.title}>Join Requests</Text>
-              {Object.entries(groupedJoinRequests).map(([groupId, requests]) => (
-                <TouchableOpacity
-                  key={groupId}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/tabs/groups/group_join_requests",
-                      params: {
-                        groupId: groupId.toString(),
-                        groupName: requests[0].group.name,
-                        requests: JSON.stringify(requests),
-                        user: JSON.stringify(user),
-                      },
-                    })
-                  }
-                  style={styles.requestCard}
-                >
-                  <Text style={styles.requestText}>{requests.length} join request{requests.length > 1 ? "s" : ""} for {requests[0].group.name}</Text>
-                  <Text style={styles.requestDate}>Last request: {new Date(requests[requests.length - 1].created_at).toLocaleDateString()}</Text>
-                </TouchableOpacity>
+              <Text style={styles.sectionTitle}>Join Requests</Text>
+              {Object.entries(groupedJoinRequests).map(([groupId, requests], i) => (
+                <Animated.View entering={FadeInUp.delay(i * 60)} key={groupId}>
+                  <TouchableOpacity
+                    style={styles.requestCard}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/tabs/groups/group_join_requests",
+                        params: {
+                          groupId,
+                          groupName: requests[0].group.name,
+                          requests: JSON.stringify(requests),
+                          user: JSON.stringify(user),
+                        },
+                      })}
+                  >
+                    <Text style={styles.requestText}>{requests.length} request{requests.length > 1 ? "s" : ""} for {requests[0].group.name}</Text>
+                    <Text style={styles.requestDate}>Last: {new Date(requests.at(-1)!.created_at).toLocaleDateString()}</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               ))}
             </>
           )}
-          {ownJoinRequests.length > 0 && (
-          <>
-            <Text style={styles.title}>Join Request Results</Text>
-            {ownJoinRequests.map((result) => (
-              <View key={result.id} style={styles.resultCard}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View>
-                    <Text style={styles.resultGroup}>{result.group.name}</Text>
-                    <Text
-                      style={[
-                        styles.resultStatus,
-                        result.status === "accepted"
-                          ? { color: "#16a34a" }
-                          : { color: "#dc2626" },
-                      ]}
-                    >
-                      {result.status === "accepted" ? "Accepted ✅" : "Rejected ❌"}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => handleDismissResult(result.id)}
-                    style={styles.dismissButton}
-                  >
-                    <Text style={styles.dismissText}>Dismiss</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </>
-        )}
 
-          <Text style={styles.title}>Join by Invite Code</Text>
-          <View style={[styles.inviteRow, { marginBottom: 8 }]}>
+          {ownJoinRequests.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Join Request Results</Text>
+              {ownJoinRequests.map((result, i) => (
+                <Animated.View entering={FadeInUp.delay(i * 60)} key={result.id}>
+                  <View style={styles.resultCard}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <View>
+                        <Text style={styles.groupName}>{result.group.name}</Text>
+                        <Text
+                          style={[
+                            styles.resultStatus,
+                            result.status === "accepted" ? { color: "#16a34a" } : { color: "#dc2626" },
+                          ]}
+                        >
+                          {result.status === "accepted" ? "Accepted ✅" : "Rejected ❌"}
+                        </Text>
+                      </View>
+                      <TouchableOpacity onPress={() => handleDismissResult(result.id)} style={styles.dismissButton}>
+                        <Text style={styles.dismissText}>Dismiss</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Animated.View>
+              ))}
+            </>
+          )}
+
+          <Text style={styles.sectionTitle}>Join by Invite Code</Text>
+          <View style={styles.inviteRow}>
             <TextInput
               placeholder="Enter invite code"
               value={inviteCode}
@@ -409,12 +361,10 @@ export default function GroupsPage() {
               style={styles.input}
             />
             <TouchableOpacity style={styles.joinButton} onPress={handleJoinByCode}>
-              <Text style={{ color: "white" }}>Join</Text>
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Join</Text>
             </TouchableOpacity>
           </View>
-          {inviteCodeError ? (
-  <Text style={{ color: "#dc2626", marginTop: 4, marginBottom: 0 }}>{inviteCodeError}</Text>
-) : null}
+          {inviteCodeError && <Text style={{ color: "#dc2626", marginTop: 4 }}>{inviteCodeError}</Text>}
         </ScrollView>
       </SafeAreaView>
 
@@ -426,7 +376,7 @@ export default function GroupsPage() {
       >
         <CreateGroupModal
           onClose={() => setShowCreateModal(false)}
-          onGroupCreated={handleRefreshGroups}
+          onGroupCreated={() => user?.id && fetchUserGroups(user.id)}
         />
       </Modal>
     </>
@@ -434,64 +384,170 @@ export default function GroupsPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingTop: 50, paddingHorizontal: 20, backgroundColor: "#fafafa" },
-  title: { fontSize: 24, fontWeight: "700", color: "#3a3a3a", marginTop: 24, marginBottom: 12 },
-  subText: { color: "#9a9a9a", marginBottom: 12, fontStyle: "italic" },
-  card: { backgroundColor: "#fefefe", borderRadius: 12, padding: 16, shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, elevation: 1, marginBottom: 12 },
-  groupName: { fontSize: 18, fontWeight: "600", color: "#242424" },
-  groupMeta: { fontSize: 14, color: "#7a7a7a", marginTop: 4 },
-  nextEvent: { color: "#567a68", marginTop: 6, fontSize: 14, fontStyle: "italic" },
-  suggestedGroup: { backgroundColor: "#f0f0f0", padding: 14, borderRadius: 10, marginBottom: 10, borderLeftWidth: 3, borderLeftColor: "#d7a4ff" },
-  inviteRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8, marginBottom: 40 },
-  input: { flex: 1, borderColor: "#bbb", borderWidth: 1, padding: 10, borderRadius: 8, backgroundColor: "#fff" },
-  joinButton: { backgroundColor: "#7c5e99", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
-  createButton: { backgroundColor: "#7c5e99", paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, alignSelf: "flex-start", marginBottom: 16 },
-  createButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  requestCard: { backgroundColor: "#fff9fc", borderLeftColor: "#ff90c2", borderLeftWidth: 4, borderRadius: 10, padding: 14, marginBottom: 12, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 },
-  requestText: { fontSize: 16, fontWeight: "600", color: "#3a3a3a" },
-  requestDate: { fontSize: 13, color: "#b36f9c", marginTop: 4, fontStyle: "italic" },
+  safeArea: { flex: 1, backgroundColor: "#FAFAFB" },
+  container: { padding: 20 },
+  pageTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1E1E1F",
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#444",
+  },
+  subText: {
+    fontSize: 14,
+    fontStyle: "italic",
+    color: "#999",
+    marginVertical: 16,
+  },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  accent: {
+    width: 8,
+    backgroundColor: "#6C4FF6",
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 16,
+  },
+  cardAlt: {
+    backgroundColor: "#F3F1FD",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+  },
+  groupName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E1E1F",
+  },
+  groupMeta: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 4,
+  },
+  requestCard: {
+    backgroundColor: "#FFF7FB",
+    padding: 14,
+    borderRadius: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: "#F29EDB",
+    marginBottom: 14,
+  },
+  requestText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#3A3A3A",
+  },
+  requestDate: {
+    fontSize: 13,
+    color: "#A14FA1",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
   resultCard: {
-  backgroundColor: "#f9f9ff",
-  borderRadius: 10,
-  padding: 14,
-  marginBottom: 10,
-  shadowColor: "#000",
-  shadowOpacity: 0.04,
-  shadowRadius: 2,
-  elevation: 1,
-},
-resultGroup: {
-  fontSize: 16,
-  fontWeight: "600",
-  color: "#3a3a3a",
-},
-resultStatus: {
-  marginTop: 4,
-  fontSize: 14,
-  fontWeight: "500",
-},
-dismissButton: {
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  backgroundColor: "#e5e7eb",
-  borderRadius: 6,
-},
-dismissText: {
-  color: "#374151",
-  fontWeight: "500",
-  fontSize: 14,
-},
-profileIconButton: {
-  position: "absolute",
-  top: 18,
-  right: 18,
-  zIndex: 20,
-  backgroundColor: "#fff",
-  borderRadius: 20,
-  padding: 2,
-  shadowColor: "#000",
-  shadowOpacity: 0.06,
-  shadowRadius: 2,
-  elevation: 2,
-},
+    backgroundColor: "#F0F5FF",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+  },
+  resultStatus: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  dismissButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 8,
+  },
+  dismissText: {
+    fontWeight: "600",
+    color: "#374151",
+  },
+  inviteRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 40,
+  },
+  input: {
+    flex: 1,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: "#fff",
+  },
+  joinButton: {
+    backgroundColor: "#6C4FF6",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  createButton: {
+    backgroundColor: "#6C4FF6",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+    marginBottom: 20,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  profileIconButton: {
+    position: "absolute",
+    right: 18,
+    zIndex: 20,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 5,
+    marginBottom: 12,
+  },
+  sectionChevron: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  loadingContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noGroupsText: {
+    fontSize: 16,
+    color: "#888",
+    fontStyle: "italic",
+    marginTop: 8,
+    marginBottom: 16,
+  },
 });

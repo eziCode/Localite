@@ -23,9 +23,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
-configureReanimatedLogger({
-    strict: false
-});
+configureReanimatedLogger({ strict: false });
 
 const GroupJoinRequests = () => {
   const router = useRouter();
@@ -36,8 +34,9 @@ const GroupJoinRequests = () => {
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const opacityAccept = useSharedValue(0);
+  const opacityReject = useSharedValue(0);
 
-  // Combine both actions into one function for runOnJS
   const processSwipe = (id: string, status: string) => {
     updateSupabaseRequestStatus(id, status);
     goToNextCard();
@@ -46,6 +45,8 @@ const GroupJoinRequests = () => {
   const goToNextCard = () => {
     translateX.value = 0;
     translateY.value = 0;
+    opacityAccept.value = 0;
+    opacityReject.value = 0;
     setCurrentIndex((prev) => prev + 1);
   };
 
@@ -54,6 +55,8 @@ const GroupJoinRequests = () => {
       if (!parsedRequests[currentIndex]) return;
       translateX.value = event.translationX;
       translateY.value = event.translationY / 2;
+      opacityAccept.value = event.translationX > 0 ? Math.min(event.translationX / 100, 1) : 0;
+      opacityReject.value = event.translationX < 0 ? Math.min(-event.translationX / 100, 1) : 0;
     })
     .onEnd((event) => {
       'worklet';
@@ -88,6 +91,22 @@ const GroupJoinRequests = () => {
     ],
   }));
 
+  const acceptIndicatorStyle = useAnimatedStyle(() => ({
+    position: "absolute",
+    top: 20,
+    left: 20,
+    opacity: opacityAccept.value,
+    transform: [{ scale: 1 + opacityAccept.value * 0.2 }],
+  }));
+
+  const rejectIndicatorStyle = useAnimatedStyle(() => ({
+    position: "absolute",
+    top: 20,
+    right: 20,
+    opacity: opacityReject.value,
+    transform: [{ scale: 1 + opacityReject.value * 0.2 }],
+  }));
+
   const updateSupabaseRequestStatus = async (requestId: string, status: string) => {
     if (!requestId) return;
     const { error } = await supabase
@@ -101,9 +120,8 @@ const GroupJoinRequests = () => {
     }
 
     if (status === "accepted" && current?.from_id) {
-      // Use Postgres array_append to add user to members array
       const { error: updateError } = await supabase.rpc(
-        "append_member_to_group_id_is_int",
+        "append_member_to_group_id_w_group_id_as_uuid",
         { group_id_input: groupId, user_id_input: current.from_id }
       );
       if (updateError) {
@@ -116,20 +134,19 @@ const GroupJoinRequests = () => {
     if (!current) return;
     translateX.value = 0;
     translateY.value = 0;
-    setCurrentIndex((prev) => prev + 1);
     updateSupabaseRequestStatus(current.id, "accepted");
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const handleReject = () => {
     if (!current) return;
     translateX.value = 0;
     translateY.value = 0;
-    setCurrentIndex((prev) => prev + 1);
     updateSupabaseRequestStatus(current.id, "rejected");
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const remaining = parsedRequests.length - currentIndex;
-
   const [usersRequestingToJoin, setUsersRequestingToJoin] = useState<PublicUser[]>([]);
 
   useEffect(() => {
@@ -148,9 +165,7 @@ const GroupJoinRequests = () => {
     fetchUserRequestingToJoin();
   }, [parsedRequests]);
 
-  // Fallback: If swiped past end, render empty container
   if (!parsedRequests[currentIndex]) {
-    // Reset animated values when done
     translateX.value = 0;
     translateY.value = 0;
     return (
@@ -180,10 +195,16 @@ const GroupJoinRequests = () => {
         <Text style={styles.headerText}>
           {remaining} request{remaining > 1 ? "s" : ""} remaining for {groupName}
         </Text>
+        <Text style={styles.subText}>Swipe right to accept ✅ • Swipe left to reject ❌</Text>
+        <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBarFill, { width: `${(currentIndex / parsedRequests.length) * 100}%` }]} />
+        </View>
+
         <View style={styles.cardContainer}>
-          {/* Only render GestureDetector if current exists */}
           <GestureDetector gesture={pan}>
             <Animated.View style={[styles.card, animatedStyle]}>
+              <Animated.Text style={[styles.indicatorText, acceptIndicatorStyle]}>✅</Animated.Text>
+              <Animated.Text style={[styles.indicatorText, rejectIndicatorStyle]}>❌</Animated.Text>
               {(() => {
                 const user = usersRequestingToJoin.find(
                   (u) => u.user_id === current.from_id
@@ -237,9 +258,9 @@ const GroupJoinRequests = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    paddingTop: 64,
+    paddingHorizontal: 20,
+    backgroundColor: "#fdfdfd",
   },
   backButton: {
     position: "absolute",
@@ -248,170 +269,171 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButtonText: {
-    fontSize: 28,
+    fontSize: 32,
     color: "#7c3aed",
     fontWeight: "700",
   },
   headerText: {
     marginTop: 20,
-    marginBottom: 16,
-    fontSize: 18,
-    fontWeight: "600",
+    marginBottom: 6,
+    fontSize: 22,
+    fontWeight: "700",
     textAlign: "center",
-    color: "#333",
-    paddingHorizontal: 40,
+    color: "#2e1065",
+  },
+  subText: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#a78bfa",
+    borderRadius: 3,
+  },
+  indicatorText: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#10b981",
   },
   cardContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   card: {
-    backgroundColor: "#faf0f8",
-    borderRadius: 16,
+    backgroundColor: "#f5f3ff",
+    borderRadius: 20,
     padding: 28,
-    width: SCREEN_WIDTH - 32,
-    height: SCREEN_HEIGHT * 0.55, // Big card
+    width: SCREEN_WIDTH - 36,
+    height: SCREEN_HEIGHT * 0.58,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 5,
   },
-  requestText: {
-    fontSize: 18,
+  userCard: {
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#e4e4e7",
+  },
+  avatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#e9d5ff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
+    borderWidth: 2,
+    borderColor: "#a855f7",
+  },
+  avatarText: {
+    fontSize: 30,
+    color: "#6b21a8",
+    fontWeight: "bold",
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1e1b4b",
+    marginBottom: 2,
+  },
+  userAge: {
+    fontSize: 15,
+    color: "#71717a",
+    marginBottom: 12,
+  },
+  messageBox: {
+    backgroundColor: "#f3e8ff",
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 10,
+    width: "100%",
+  },
+  messageText: {
+    fontSize: 15,
+    fontStyle: "italic",
+    color: "#4b5563",
     textAlign: "center",
-    color: "#3a3a3a",
   },
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    marginBottom: 30,
+    marginBottom: 40,
+    gap: 16,
   },
   rejectButton: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#f87171",
     paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 10,
+    borderRadius: 12,
+    flex: 1,
   },
   acceptButton: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#4ade80",
     paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 10,
+    borderRadius: 12,
+    flex: 1,
   },
   actionText: {
     color: "white",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  doneText: {
-    fontSize: 20,
     fontWeight: "700",
+    fontSize: 16,
     textAlign: "center",
-    marginTop: 100,
-    color: "#7c3aed",
   },
-  userNameText: {
-  marginTop: 12,
-  fontSize: 16,
-  fontWeight: "500",
-  color: "#4b5563", // muted gray
-},
-
-userAgeText: {
-  fontSize: 15,
-  color: "#6b7280",
-},
-userCard: {
-  alignItems: "center",
-  padding: 20,
-  backgroundColor: "#fff",
-  borderRadius: 12,
-  width: "100%",
-  shadowColor: "#000",
-  shadowOpacity: 0.05,
-  shadowRadius: 6,
-  elevation: 3,
-},
-
-avatar: {
-  width: 80,
-  height: 80,
-  borderRadius: 40,
-  backgroundColor: "#d8b4fe",
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: 12,
-},
-
-avatarText: {
-  fontSize: 28,
-  color: "#6b21a8",
-  fontWeight: "bold",
-},
-
-userName: {
-  fontSize: 20,
-  fontWeight: "600",
-  color: "#333",
-  marginBottom: 4,
-},
-
-userAge: {
-  fontSize: 16,
-  color: "#6b7280",
-  marginBottom: 12,
-},
-
-messageBox: {
-  backgroundColor: "#f3e8ff",
-  padding: 16,
-  borderRadius: 8,
-  marginTop: 8,
-},
-
-messageText: {
-  fontSize: 16,
-  fontStyle: "italic",
-  color: "#4b5563",
-  textAlign: "center",
-},
-doneContainer: {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-},
-
-doneCard: {
-  backgroundColor: "#f0f9ff",
-  padding: 24,
-  borderRadius: 16,
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
-  shadowRadius: 8,
-  elevation: 4,
-  alignItems: "center",
-  maxWidth: SCREEN_WIDTH * 0.8,
-},
-
-doneTitle: {
-  fontSize: 22,
-  fontWeight: "700",
-  color: "#0f172a",
-  marginBottom: 8,
-  textAlign: "center",
-},
-
-doneSubtitle: {
-  fontSize: 16,
-  color: "#334155",
-  textAlign: "center",
-},
-
+  doneContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  doneCard: {
+    backgroundColor: "#ecfeff",
+    padding: 28,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 5,
+    alignItems: "center",
+    maxWidth: SCREEN_WIDTH * 0.85,
+    borderWidth: 1,
+    borderColor: "#bae6fd",
+  },
+  doneTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#0f172a",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  doneSubtitle: {
+    fontSize: 16,
+    color: "#334155",
+    textAlign: "center",
+  },
 });
 
 export default GroupJoinRequests;

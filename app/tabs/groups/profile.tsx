@@ -162,19 +162,20 @@ export default function UserProfile() {
   }, {});
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Back Button */}
+    <View style={{ flex: 1, backgroundColor: '#fafafa' }}>
+      {/* Fixed Header */}
+      <SafeAreaView edges={['top']} style={styles.fixedHeader}>
         <TouchableOpacity
-          style={styles.backButton}
           onPress={() => router.back()}
+          style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color="#7c3aed" />
+          <Ionicons name="arrow-back" size={20} color="#7c3aed" />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
-
-        {/* Profile Picture and Info Row */}
+      </SafeAreaView>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={{ height: 110 }} />
         <View style={styles.profileRow}>
           <TouchableOpacity
             style={styles.profilePicContainer}
@@ -240,13 +241,38 @@ export default function UserProfile() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#fafafa', flex: 1 },
-  scroll: { padding: 20, paddingBottom: 80 },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    color: '#7c3aed',
+    fontSize: 17,
+    fontWeight: '600',
+    marginLeft: 2,
+  },
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: 'rgba(250,250,251,0.95)',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    paddingLeft: 16,
+  },
+  scroll: {
+    padding: 20,
+    paddingBottom: 80,
+  },
   headerText: { fontSize: 28, fontWeight: '700', color: '#1f2937' },
   subtext: { fontSize: 16, color: '#6b7280', marginBottom: 4 },
   groupSummary: { fontSize: 18, fontWeight: '500', marginBottom: 16, color: '#374151' },
@@ -273,18 +299,6 @@ const styles = StyleSheet.create({
   eventTime: { color: '#6b7280', fontSize: 14, marginTop: 2 },
   eventLocation: { color: '#6b7280', fontSize: 13, marginTop: 2 },
   noEventsText: { fontStyle: 'italic', color: '#6b7280', marginTop: 10, textAlign: 'center' },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 18,
-    alignSelf: 'flex-start',
-  },
-  backButtonText: {
-    color: '#7c3aed',
-    fontSize: 17,
-    fontWeight: '600',
-    marginLeft: 2,
-  },
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',

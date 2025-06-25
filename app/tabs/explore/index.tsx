@@ -1,16 +1,18 @@
 import { supabase } from "@/lib/supabase";
 import { UserEvent } from "@/types/user_event";
+import { User } from "@supabase/supabase-js";
 import * as Location from "expo-location";
 import { router, Stack } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -26,16 +28,16 @@ function getDistanceFromLatLonInMiles(lat1: number, lon1: number, lat2: number, 
   return R * c;
 }
 
-const PAGE_SIZE = 25;
-
 export default function Explore() {
   const [events, setEvents] = useState<UserEvent[]>([]);
-  const [absoluteOffset, setAbsoluteOffset] = useState<number | null>(0);
-  const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(null);
-  const [userCoords, setUserCoords] = useState<{ latitude: number, longitude: number } | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Move these outside fetchEvents so they're accessible in render
+  const [eventsToday, setEventsToday] = useState<UserEvent[]>([]);
+  const [eventsThisWeek, setEventsThisWeek] = useState<UserEvent[]>([]);
+  const [eventsLater, setEventsLater] = useState<UserEvent[]>([]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -49,7 +51,6 @@ export default function Explore() {
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        console.error("Permission to access location was denied");
         setLoading(false);
         return;
       }
@@ -57,28 +58,13 @@ export default function Explore() {
       const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       setUserCoords({ latitude, longitude });
-      setLoading(false);
+      fetchEvents(user, latitude, longitude);
     };
-
     initialize();
+     
   }, []);
 
-  useEffect(() => {
-    if (absoluteOffset !== null && user && userCoords) {
-      fetchRankedEvents(absoluteOffset, absoluteOffset === 0);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userCoords]);
-
-  const fetchRankedEvents = async (offsetToUse: number, isInitial = false) => {
-    if (!user || !userCoords) return;
-
-    if (isInitial) {
-      setLoading(true);
-    } else {
-      setLoadingMore(true);
-    }
-
+  const fetchEvents = async (user: User, lat: number, lon: number) => {
     try {
       const response = await fetch("https://axdnmsjjofythsclelgu.functions.supabase.co/rank_events", {
         method: "POST",
@@ -88,195 +74,204 @@ export default function Explore() {
         },
         body: JSON.stringify({
           user_id: user.id,
-          userLatitude: userCoords.latitude,
-          userLongitude: userCoords.longitude,
+          userLatitude: lat,
+          userLongitude: lon,
           userAge: user.user_metadata?.age,
-          offset: offsetToUse,
-          pageSize: PAGE_SIZE,
+          offset: 0,
+          pageSize: 25,
         }),
       });
 
-      if (response.status === 200) {
-        const { events: newEvents, has_more, next_offset } = await response.json() as {
-          events: UserEvent[],
-          has_more: boolean,
-          next_offset: number | null,
-        };
+      const data = await response.json();
 
-        if (offsetToUse === 0) {
-          setEvents(newEvents);
-        } else {
-          setEvents(prev => [...prev, ...newEvents]);
-        }
-
-        setHasMore(has_more);
-        setAbsoluteOffset(next_offset);
-      } else {
-        const error = await response.json();
-        console.error(`Error ${response.status}:`, error);
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      if (isInitial) {
+      // Ensure data is an array
+      if (!data.events || !Array.isArray(data.events)) {
+        console.error("Invalid data from API:", data);
+        setEvents([]);
+        setEventsToday([]);
+        setEventsThisWeek([]);
+        setEventsLater([]);
         setLoading(false);
-      } else {
-        setLoadingMore(false);
+        return;
       }
+
+      setEvents(data.events);
+
+      // Categorize events
+      const now = new Date();
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const weekEnd = new Date();
+      weekEnd.setDate(now.getDate() + 7);
+
+      setEventsToday(
+        data.events.filter((e: UserEvent) => new Date(e.start_time) <= todayEnd)
+      );
+      setEventsThisWeek(
+        data.events.filter(
+          (e: UserEvent) =>
+            new Date(e.start_time) > todayEnd && new Date(e.start_time) <= weekEnd
+        )
+      );
+      setEventsLater(
+        data.events.filter((e: UserEvent) => new Date(e.start_time) > weekEnd)
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadMore = useCallback(() => {
-    if (!loadingMore && hasMore && absoluteOffset !== null) {
-      fetchRankedEvents(absoluteOffset, false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingMore, hasMore, absoluteOffset]);
-
-  const renderEvent = ({ item }: { item: UserEvent }) => {
-    let distanceText = "";
-    if (
-      userCoords &&
-      typeof item.latitude === "number" &&
-      typeof item.longitude === "number"
-    ) {
-      const distance = getDistanceFromLatLonInMiles(
-        userCoords.latitude,
-        userCoords.longitude,
-        item.latitude,
-        item.longitude
-      );
-      distanceText = `${distance.toFixed(1)} miles away`;
-    }
+  const renderEventCard = (event: UserEvent, index: number) => {
+    const distance =
+      userCoords && event.latitude && event.longitude
+        ? `${getDistanceFromLatLonInMiles(
+            userCoords.latitude,
+            userCoords.longitude,
+            event.latitude,
+            event.longitude
+          ).toFixed(1)} mi`
+        : null;
 
     return (
-      <Pressable
-        style={styles.card}
-        onPress={() => {
-          router.push({
-            pathname: "/(shared)/inspect_event",
-            params: {
-              user: JSON.stringify(user),
-              event: JSON.stringify(item),
-            },
-          })
-        }}
-      >
-        <View style={styles.accent} />
-        <View style={styles.cardContent}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.subtitle}>
-            {new Date(item.start_time).toLocaleString()}
-          </Text>
-          <Text style={styles.meta}>{item.location_name}</Text>
-          {distanceText ? (
-            <Text style={styles.distance}>{distanceText}</Text>
-          ) : null}
-        </View>
-      </Pressable>
+      <Animated.View entering={FadeInUp.delay(index * 60)} key={event.id}>
+        <Pressable
+          style={styles.card}
+          onPress={() => {
+            router.push({
+              pathname: "/(shared)/inspect_event",
+              params: { user: JSON.stringify(user), event: JSON.stringify(event) },
+            });
+          }}
+        >
+          <View style={styles.accent} />
+          <View style={styles.cardContent}>
+            <Text style={styles.title}>{event.title}</Text>
+            <Text style={styles.subtitle}>
+              {new Date(event.start_time).toLocaleString()}
+            </Text>
+            <Text style={styles.meta}>{event.location_name}</Text>
+            {distance && <Text style={styles.distance}>{distance}</Text>}
+          </View>
+        </Pressable>
+      </Animated.View>
     );
   };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <Text style={styles.pageTitle}>Explore Events Nearby</Text>
-          {loading ? (
-            <ActivityIndicator size="large" color="#333" />
-          ) : events.length === 0 ? (
-            <Text style={styles.text}>No events found nearby.</Text>
-          ) : (
-            <FlatList
-              data={events}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderEvent}
-              contentContainerStyle={styles.listContent}
-              onEndReached={loadMore}
-              onEndReachedThreshold={0.5}
-              ListFooterComponent={
-                loadingMore ? (
-                  <ActivityIndicator size="small" color="#999" style={{ marginVertical: 16 }} />
-                ) : !hasMore ? (
-                  <Text style={styles.text}>You&apos;ve reached the end.</Text>
-                ) : null
-              }
-            />
-          )}
-        </View>
-      </SafeAreaView>
-    </>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.pageTitle}>Explore</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#6C4FF6" />
+        ) : (
+          <>
+            {eventsToday.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Today</Text>
+                {eventsToday.map(renderEventCard)}
+              </>
+            )}
+            {eventsThisWeek.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>This Week</Text>
+                {eventsThisWeek.map(renderEventCard)}
+              </>
+            )}
+            {eventsLater.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Later</Text>
+                {eventsLater.map(renderEventCard)}
+              </>
+            )}
+            {eventsToday.length === 0 &&
+              eventsThisWeek.length === 0 &&
+              eventsLater.length === 0 && (
+                <Text style={styles.sectionTitle}>No events found</Text>
+              )}
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f5f6fa",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f6fa",
-    paddingTop: 0,
-  },
+  safeArea: { flex: 1, backgroundColor: "#FAFAFB" },
+  container: { padding: 20 },
   pageTitle: {
     fontSize: 28,
-    fontWeight: "bold",
-    color: "#222",
-    textAlign: "center",
-    marginBottom: 16,
-    marginTop: 8,
+    fontWeight: "700",
+    color: "#1E1E1F",
+    marginBottom: 12,
   },
-  text: {
+  sectionTitle: {
     fontSize: 20,
+    fontWeight: "600",
     color: "#444",
-    textAlign: "center",
-    padding: 20,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
+    marginTop: 24,
+    marginBottom: 12,
   },
   card: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    borderRadius: 16,
-    overflow: "hidden",
+    borderRadius: 20,
     marginBottom: 16,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
   },
   accent: {
     width: 8,
-    backgroundColor: "#5e60ce",
+    backgroundColor: "#6C4FF6",
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
   },
   cardContent: {
     flex: 1,
-    padding: 12,
+    padding: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#222",
-    marginBottom: 4,
+    color: "#1E1E1F",
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
+    color: "#555",
+    marginTop: 4,
   },
   meta: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#888",
     marginTop: 4,
   },
   distance: {
     fontSize: 14,
-    color: "#5e60ce",
     fontWeight: "600",
+    color: "#6C4FF6",
     marginTop: 6,
+  },
+  tagContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 8,
+    gap: 6,
+  },
+  tag: {
+    backgroundColor: "#ECE9FD",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  tagText: {
+    fontSize: 12,
+    color: "#6C4FF6",
+    fontWeight: "600",
   },
 });

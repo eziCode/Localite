@@ -4,13 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -25,7 +25,6 @@ const ShowAllGroups = () => {
 
   const [groupsToDisplay, setGroupsToDisplay] = useState<Group[]>(initialGroups);
   const [page, setPage] = useState(initialPage);
-
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
@@ -53,6 +52,7 @@ const ShowAllGroups = () => {
         });
 
         if (!data || data.length < PAGE_SIZE) setHasMore(false);
+
       } else if (type === 'suggested') {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -79,8 +79,14 @@ const ShowAllGroups = () => {
 
         if (groupError) throw groupError;
 
-        const filteredGroups = groups?.filter(group => !blockedGroupIds.has(group.id)) || [];
-        setGroupsToDisplay(prev => [...prev, ...filteredGroups]);
+        const filteredGroups = (groups || []).filter(group => !blockedGroupIds.has(group.id));
+
+        setGroupsToDisplay(prev => {
+          const existingIds = new Set(prev.map(g => g.id));
+          const uniqueGroups = filteredGroups.filter(g => !existingIds.has(g.id));
+          return [...prev, ...uniqueGroups];
+        });
+
         if (!groups || groups.length < PAGE_SIZE) setHasMore(false);
       }
     } catch (err) {
@@ -92,34 +98,35 @@ const ShowAllGroups = () => {
 
   useEffect(() => {
     fetchRemainingGroups(page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const handleNavigate = (group: Group) => {
     if (type === 'user') {
-        router.push({ 
-          pathname: "/tabs/groups/own_groups_view", 
-          params: { group: JSON.stringify(group), user: JSON.stringify(user) } 
-        });
+      router.push({
+        pathname: "/tabs/groups/own_groups_view",
+        params: { group: JSON.stringify(group), user: JSON.stringify(user) }
+      });
     } else {
-        router.push({ 
-          pathname: "/tabs/groups/foreign_groups_view", 
-          params: { group: JSON.stringify(group), user: JSON.stringify(user) } 
-        });
+      router.push({
+        pathname: "/tabs/groups/foreign_groups_view",
+        params: { group: JSON.stringify(group), user: JSON.stringify(user) }
+      });
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#6C4FF6" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Groups</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {loading && groupsToDisplay.length === 0 ? (
-        <ActivityIndicator size="large" color="#666" />
+        <ActivityIndicator size="large" color="#6C4FF6" style={{ marginTop: 32 }} />
       ) : (
         <FlatList
           data={groupsToDisplay}
@@ -128,18 +135,20 @@ const ShowAllGroups = () => {
             <Pressable
               style={({ pressed }) => [
                 styles.card,
-                pressed && { backgroundColor: "#ece6fa" }
+                pressed && { backgroundColor: "#ece9fc" },
               ]}
               onPress={() => handleNavigate(item)}
             >
               <Text style={styles.groupName}>{item.name}</Text>
-              <Text style={styles.groupDesc} numberOfLines={1}>{item.description || 'No description'}</Text>
+              <Text style={styles.groupDesc} numberOfLines={1}>
+                {item.description || 'No description'}
+              </Text>
             </Pressable>
           )}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           onEndReached={() => hasMore && setPage(p => p + 1)}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={loading ? <ActivityIndicator style={{ marginVertical: 16 }} /> : null}
+          ListFooterComponent={loading ? <ActivityIndicator color="#6C4FF6" style={{ marginVertical: 16 }} /> : null}
         />
       )}
     </SafeAreaView>
@@ -147,9 +156,9 @@ const ShowAllGroups = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#FAFAFB',
   },
   header: {
     flexDirection: 'row',
@@ -157,33 +166,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#fff',
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#1E1E1F',
   },
   card: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   groupName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#222',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1E1E1F',
   },
   groupDesc: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
+    marginTop: 4,
   },
 });
 
