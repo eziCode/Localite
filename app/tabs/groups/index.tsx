@@ -175,29 +175,48 @@ export default function GroupsPage() {
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.pageTitle}>Groups</Text>
 
-          <Text style={styles.sectionTitle}>Your Groups</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Your Groups</Text>
+            {userGroups.length > MAX_GROUPS_TO_SHOW && (
+              <TouchableOpacity
+                style={styles.sectionChevron}
+                onPress={() => router.push({
+                  pathname: "/tabs/groups/show_all_groups",
+                  params: {
+                    groupsAlreadyFetched: JSON.stringify(userGroups),
+                    user: JSON.stringify(user),
+                    type: 'user',
+                  },
+                })}
+              >
+                <Ionicons name="chevron-forward-circle" size={26} color="#6C4FF6" />
+              </TouchableOpacity>
+            )}
+          </View>
           {userGroups.length === 0 ? (
             <Text style={styles.subText}>No groups yet.</Text>
           ) : (
-            userGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
-              <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
-                <TouchableOpacity
-                  onPress={() => router.push({
-                    pathname: "/tabs/groups/own_groups_view",
-                    params: { group: JSON.stringify(group), user: JSON.stringify(user) },
-                  })}
-                  style={styles.card}
-                >
-                  <View style={styles.accent} />
-                  <View style={styles.cardContent}>
-                    <Text style={styles.groupName}>{group.name}</Text>
-                    <Text style={styles.groupMeta}>
-                      {group.members?.length ?? 0} {group.members?.length === 1 ? "member" : "members"}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              </Animated.View>
-            ))
+            <>
+              {userGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
+                <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
+                  <TouchableOpacity
+                    onPress={() => router.push({
+                      pathname: "/tabs/groups/own_groups_view",
+                      params: { group: JSON.stringify(group), user: JSON.stringify(user) },
+                    })}
+                    style={styles.card}
+                  >
+                    <View style={styles.accent} />
+                    <View style={styles.cardContent}>
+                      <Text style={styles.groupName}>{group.name}</Text>
+                      <Text style={styles.groupMeta}>
+                        {group.members?.length ?? 0} {group.members?.length === 1 ? "member" : "members"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              ))}
+            </>
           )}
 
           <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.createButton}>
@@ -324,13 +343,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     color: "#444",
-    marginTop: 24,
-    marginBottom: 12,
   },
   subText: {
     fontSize: 14,
     fontStyle: "italic",
     color: "#999",
+    marginVertical: 16,
   },
   card: {
     flexDirection: "row",
@@ -454,5 +472,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 2,
     elevation: 2,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  sectionChevron: {
+    marginLeft: 8,
+    padding: 4,
   },
 });

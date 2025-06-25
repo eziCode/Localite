@@ -48,8 +48,8 @@ export default function OwnGroupsView() {
   const founder = group.founder;
   const leaders = React.useMemo(() => group.leaders ?? [], [group.leaders]);
   const members = group.members.filter((m) => m !== founder && !leaders.includes(m));
-  const [leadersCount, setLeaderCount] = useState<number>(leaders.length);
-  const [membersCount, setMemberCount] = useState<number>(members.length);
+  const [leadersCount] = useState<number>(leaders.length);
+  const [membersCount] = useState<number>(members.length);
   const leaderToFetchCount = leadersCount > 5 ? 5 : leadersCount;
   const memberToFetchCount = membersCount > 5 ? 5 : membersCount;
 
