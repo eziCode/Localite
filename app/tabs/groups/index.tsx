@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Animated, { Easing, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import type { Group } from "../../../types/group";
@@ -31,9 +31,32 @@ export default function GroupsPage() {
   const [groupedJoinRequests, setGroupedJoinRequests] = useState<{ [groupId: string]: JoinRequestWithGroup[] }>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [inviteCodeError, setInviteCodeError] = useState("");
+  const [loadingUserGroups, setLoadingUserGroups] = useState(true);
+  const [loadingSuggestedGroups, setLoadingSuggestedGroups] = useState(true);
   const insets = useSafeAreaInsets();
 
+  const spinAnimation = useSharedValue(0);
+
+  useEffect(() => {
+    spinAnimation.value = withRepeat(
+      withTiming(1, {
+        duration: 1000,
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${spinAnimation.value * 360}deg` }],
+    };
+  });
+
   const fetchUserGroups = async (userId: string) => {
+    setLoadingUserGroups(true);
     const { data, error } = await supabase
       .from("groups")
       .select("*")
@@ -41,9 +64,11 @@ export default function GroupsPage() {
       .limit(MAX_GROUPS_TO_SHOW + 1);
     if (error) console.error(error);
     else setUserGroups(data);
+    setLoadingUserGroups(false);
   };
 
   const fetchSuggestedGroups = async (userId: string) => {
+    setLoadingSuggestedGroups(true);
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const { data: requests } = await supabase
@@ -65,6 +90,7 @@ export default function GroupsPage() {
       .neq("visibility", "hidden");
     if (error) console.error(error);
     else setSuggestedGroups(groups.filter(group => !blockedGroupIds.has(group.id)));
+    setLoadingSuggestedGroups(false);
   };
 
   const fetchJoinRequests = async (userId: string) => {
@@ -193,30 +219,33 @@ export default function GroupsPage() {
               </TouchableOpacity>
             )}
           </View>
-          {userGroups.length === 0 ? (
-            <Text style={styles.subText}>No groups yet.</Text>
+
+          {loadingUserGroups ? (
+            <Animated.View style={[styles.loadingContainer, animatedStyle]}>
+              <Ionicons name="sync" size={24} color="#6C4FF6" />
+            </Animated.View>
+          ) : userGroups.length === 0 ? (
+            <Text style={styles.noGroupsText}>No groups joined yet</Text>
           ) : (
-            <>
-              {userGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
-                <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
-                  <TouchableOpacity
-                    onPress={() => router.push({
-                      pathname: "/tabs/groups/own_groups_view",
-                      params: { group: JSON.stringify(group), user: JSON.stringify(user) },
-                    })}
-                    style={styles.card}
-                  >
-                    <View style={styles.accent} />
-                    <View style={styles.cardContent}>
-                      <Text style={styles.groupName}>{group.name}</Text>
-                      <Text style={styles.groupMeta}>
-                        {group.members?.length ?? 0} {group.members?.length === 1 ? "member" : "members"}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              ))}
-            </>
+            userGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
+              <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
+                <TouchableOpacity
+                  onPress={() => router.push({
+                    pathname: "/tabs/groups/own_groups_view",
+                    params: { group: JSON.stringify(group), user: JSON.stringify(user) },
+                  })}
+                  style={styles.card}
+                >
+                  <View style={styles.accent} />
+                  <View style={styles.cardContent}>
+                    <Text style={styles.groupName}>{group.name}</Text>
+                    <Text style={styles.groupMeta}>
+                      {group.members?.length ?? 0} {group.members?.length === 1 ? "member" : "members"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            ))
           )}
 
           <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.createButton}>
@@ -224,8 +253,13 @@ export default function GroupsPage() {
           </TouchableOpacity>
 
           <Text style={styles.sectionTitle}>Suggested Groups</Text>
-          {suggestedGroups.length === 0 ? (
-            <Text style={styles.subText}>No suggestions at this time.</Text>
+
+          {loadingSuggestedGroups ? (
+            <Animated.View style={[styles.loadingContainer, animatedStyle]}>
+              <Ionicons name="sync" size={24} color="#6C4FF6" />
+            </Animated.View>
+          ) : suggestedGroups.length === 0 ? (
+            <Text style={styles.noGroupsText}>No suggested groups found</Text>
           ) : (
             suggestedGroups.slice(0, MAX_GROUPS_TO_SHOW).map((group, i) => (
               <Animated.View entering={FadeInUp.delay(i * 60)} key={group.id}>
@@ -477,11 +511,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 24,
+    marginTop: 5,
     marginBottom: 12,
   },
   sectionChevron: {
     marginLeft: 8,
     padding: 4,
+  },
+  loadingContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noGroupsText: {
+    fontSize: 16,
+    color: "#888",
+    fontStyle: "italic",
+    marginTop: 8,
+    marginBottom: 16,
   },
 });
