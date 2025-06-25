@@ -9,10 +9,12 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const PAGE_SIZE = 25;
 
@@ -30,6 +32,12 @@ const ShowAllGroups = () => {
 
   const user: import("@supabase/supabase-js").User = params.user ? JSON.parse(params.user as string) : null;
   const type: string = Array.isArray(params.type) ? params.type[0] : params.type;
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredGroups = groupsToDisplay.filter(group =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (group.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+  );
 
   const fetchRemainingGroups = async (page: number) => {
     if (!user) return;
@@ -128,28 +136,46 @@ const ShowAllGroups = () => {
       {loading && groupsToDisplay.length === 0 ? (
         <ActivityIndicator size="large" color="#6C4FF6" style={{ marginTop: 32 }} />
       ) : (
-        <FlatList
-          data={groupsToDisplay}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [
-                styles.card,
-                pressed && { backgroundColor: "#ece9fc" },
-              ]}
-              onPress={() => handleNavigate(item)}
-            >
-              <Text style={styles.groupName}>{item.name}</Text>
-              <Text style={styles.groupDesc} numberOfLines={1}>
-                {item.description || 'No description'}
-              </Text>
-            </Pressable>
-          )}
-          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-          onEndReached={() => hasMore && setPage(p => p + 1)}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={loading ? <ActivityIndicator color="#6C4FF6" style={{ marginVertical: 16 }} /> : null}
-        />
+        <>
+  <View style={styles.searchContainer}>
+    <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+    <TextInput
+      placeholder="Search groups..."
+      value={searchQuery}
+      onChangeText={setSearchQuery}
+      placeholderTextColor="#9CA3AF"
+      style={styles.searchInput}
+    />
+  </View>
+
+  {loading && groupsToDisplay.length === 0 ? (
+    <ActivityIndicator size="large" color="#6C4FF6" style={{ marginTop: 32 }} />
+  ) : (
+      <FlatList
+            data={filteredGroups}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.card,
+                  pressed && { backgroundColor: "#ece9fc" },
+                ]}
+                onPress={() => handleNavigate(item)}
+              >
+                <Text style={styles.groupName}>{item.name}</Text>
+                <Text style={styles.groupDesc} numberOfLines={1}>
+                  {item.description || 'No description'}
+                </Text>
+              </Pressable>
+            )}
+            contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+            onEndReached={() => hasMore && setPage(p => p + 1)}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={loading ? <ActivityIndicator color="#6C4FF6" style={{ marginVertical: 16 }} /> : null}
+          />
+        )}
+      </>
+
       )}
     </SafeAreaView>
   );
@@ -195,6 +221,22 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 4,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1E1E1F',
+  },
+
 });
 
 export default ShowAllGroups;
