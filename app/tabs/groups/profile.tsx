@@ -161,6 +161,32 @@ export default function UserProfile() {
     return acc;
   }, {});
 
+  const greetings = [
+    { greeting: 'Guten Tag', language: 'German' },
+    { greeting: 'Hola', language: 'Spanish' },
+    { greeting: 'Bonjour', language: 'French' },
+    { greeting: 'Shalom', language: 'Hebrew' },
+    { greeting: 'Ciao', language: 'Italian' },
+    { greeting: 'Ola', language: 'Portuguese' },
+    { greeting: 'Hello', language: 'English' },
+    { greeting: 'Salam', language: 'Persian' },
+    { greeting: 'Sawubona', language: 'Zulu' },
+    { greeting: 'Yassas', language: 'Greek' },
+    { greeting: 'Szia', language: 'Hungarian' },
+    { greeting: 'Selam', language: 'Amharic' },
+    { greeting: 'Kia ora', language: 'Maori' },
+    { greeting: 'Halo', language: 'Indonesian' },
+    { greeting: 'Hej', language: 'Swedish' },
+    { greeting: 'Hei', language: 'Norwegian' },
+    { greeting: 'Hallo', language: 'Dutch' },
+    { greeting: 'Merhaba', language: 'Turkish' },
+    { greeting: 'Ahoj', language: 'Czech' },
+    { greeting: 'Sveiki', language: 'Latvian' },
+  ];
+  const [chosenGreeting] = useState(
+    () => greetings[Math.floor(Math.random() * greetings.length)]
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: '#fafafa' }}>
       {/* Fixed Header */}
@@ -185,7 +211,10 @@ export default function UserProfile() {
             {profilePicture}
           </TouchableOpacity>
           <View style={styles.profileInfo}>
-            <Text style={styles.headerText}>Welcome, {userName}!</Text>
+            <Text style={styles.greetingText}>
+              {chosenGreeting.greeting}, {userName}!
+            </Text>
+            <Text style={styles.languageText}>{chosenGreeting.language}</Text>
             {joinDate && <Text style={styles.subtext}>Joined on {joinDate}</Text>}
             <TouchableOpacity
               activeOpacity={0.7}
@@ -313,5 +342,19 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
     justifyContent: 'center',
+  },
+  greetingText: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginTop: 2,
+    marginBottom: 0,
+  },
+  languageText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#6b7280',
+    marginBottom: 8,
+    marginTop: 0,
   },
 });
