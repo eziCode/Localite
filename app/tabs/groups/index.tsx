@@ -87,9 +87,11 @@ export default function GroupsPage() {
       .from("groups")
       .select("*")
       .not("members", "cs", JSON.stringify([userId]))
-      .neq("visibility", "hidden");
+      .not("id", "in", `(${Array.from(blockedGroupIds).join(",")})`)
+      .neq("visibility", "hidden")
+      .limit(MAX_GROUPS_TO_SHOW + 1);
     if (error) console.error(error);
-    else setSuggestedGroups(groups.filter(group => !blockedGroupIds.has(group.id)));
+    else setSuggestedGroups(groups);
     setLoadingSuggestedGroups(false);
   };
 
@@ -252,7 +254,24 @@ export default function GroupsPage() {
             <Text style={styles.createButtonText}>+ Create New Group</Text>
           </TouchableOpacity>
 
-          <Text style={styles.sectionTitle}>Suggested Groups</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Suggested Groups</Text>
+            {suggestedGroups.length > MAX_GROUPS_TO_SHOW && (
+              <TouchableOpacity
+                style={styles.sectionChevron}
+                onPress={() => router.push({
+                  pathname: "/tabs/groups/show_all_groups",
+                  params: {
+                    groupsAlreadyFetched: JSON.stringify(suggestedGroups),
+                    user: JSON.stringify(user),
+                    type: 'foreign',
+                  },
+                })}
+              >
+                <Ionicons name="chevron-forward-circle" size={26} color="#6C4FF6" />
+              </TouchableOpacity>
+            )}
+          </View>
 
           {loadingSuggestedGroups ? (
             <Animated.View style={[styles.loadingContainer, animatedStyle]}>
