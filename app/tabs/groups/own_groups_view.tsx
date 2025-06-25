@@ -524,11 +524,7 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ede9fe', // light purple
-    justifyContent: 'flex-start',
-    paddingHorizontal: 14,
+    marginBottom: 18,
     alignSelf: 'flex-start',
   },
   backButtonText: {

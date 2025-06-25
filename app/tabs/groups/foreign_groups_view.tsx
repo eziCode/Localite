@@ -133,7 +133,7 @@ export default function ForeignGroupsView() {
       {/* Fixed Header */}
       <SafeAreaView edges={['top']} style={styles.fixedHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={20} color="#7c3aed" /> {/* deep purple */}
+          <Ionicons name="arrow-back" size={20} color="#7c3aed" />
           <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingTop: 0, // SafeAreaView will handle top padding
+    paddingTop: 0,
     paddingHorizontal: 24,
     paddingBottom: 16,
     backgroundColor: 'rgba(250,250,251,0.95)',
@@ -331,16 +331,12 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ede9fe', // light purple
-    justifyContent: 'flex-start',
-    paddingHorizontal: 14,
+    marginBottom: 18,
     alignSelf: 'flex-start',
   },
   backButtonText: {
     fontSize: 16,
-    color: '#7c3aed', // deep purple (matches arrow)
+    color: '#7c3aed',
     marginLeft: 6,
     fontWeight: '600',
   },
