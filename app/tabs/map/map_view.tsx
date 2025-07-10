@@ -84,20 +84,44 @@ export default function GeoMap() {
       .order("upvotes", { ascending: false })
       .limit(10);
 
-    if (error) console.error(error);
-    else setEvents(data || []);
+    if (error) {
+      console.error(error);
+    } else if ( // if same data as before, do not update state
+      !Array.isArray(data) ||
+      data.length !== eventsInView.length ||
+      data.some((d, i) => d.id !== eventsInView[i]?.id)
+    ) {
+      setEvents(data || []);
+    }
   }
 
-  // No debounce: fetch events immediately on region change
+  const fetchTimeout = useRef<NodeJS.Timeout | number | null>(null);
+
   const handleRegionChangeComplete = (region: Region) => {
     setCurrentRegion(region);
-    fetchEventsInView(region);
+
+    // Clear any existing timeout
+    if (fetchTimeout.current) {
+      clearTimeout(fetchTimeout.current);
+    }
+
+    // Set a new timeout to fetch after 1.5 seconds of inactivity
+    fetchTimeout.current = setTimeout(() => {
+      fetchEventsInView(region);
+    }, 1500);
   };
 
   useEffect(() => {
     userLocation();
     fetchEventsInView(mapRegion);
-  },[]);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (fetchTimeout.current) {
+        clearTimeout(fetchTimeout.current);
+      }
+    };
+  }, []);
 
   const [showMapTypeOptions, setShowMapTypeOptions] = useState(false);
 
