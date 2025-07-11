@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import * as Location from 'expo-location';
 import { Stack } from "expo-router";
@@ -179,6 +180,7 @@ export default function GeoMap() {
                     });
                   }}
                 >
+                  <FontAwesome5 name="map-marker" size={24} color="black" />
                   <Callout onPress={() => setSelectedEvent(event)}>
                     <View style={styles.previewCallout}>
                       {/* Text Info (top) */}
@@ -188,7 +190,7 @@ export default function GeoMap() {
                         <Text style={styles.previewInfo}><FontAwesome6 name="circle-up" size={13} color="red" /> {event.upvotes ?? 0} upvotes</Text>
                       </View>
 
-                      {/* Image or Placeholder (bottom) */}
+                      {/* Image Placeholder */}
                       <View style={styles.calloutImageBox}>
                         <Text style={{ color: "#888" }}>[Image Here]</Text>
                       </View>
@@ -304,7 +306,7 @@ export default function GeoMap() {
 }
 
 const styles = StyleSheet.create({
-  previewCallout: {
+previewCallout: {
   flexDirection: 'column',
   width: 240,
   height: 180,
