@@ -84,14 +84,14 @@ export default function GeoMap() {
       .gte("longitude", minLng)
       .lte("longitude", maxLng)
       .gte("start_time", new Date().toISOString())
-      .order("upvotes", { ascending: false })
+      .order("upvotes", { ascending: false }) // Order by upvotes
       .limit(10);
 
     if (error) console.error(error);
     else setEvents(data || []);
   }
 
-  // fetch events immediately on region change
+  // fetch events immediately after region stops changing
   const handleRegionChangeComplete = (region: Region) => {
     setCurrentRegion(region);
     fetchEventsInView(region);
@@ -163,7 +163,7 @@ export default function GeoMap() {
                 <Marker
                   key={event.id}
                   coordinate={{ latitude: event.latitude, longitude: event.longitude }}
-                  onCalloutPress={() => {
+                  onCalloutPress={() => { {/* Callout appears after tapping on Marker */}
                     router.push({
                       pathname: "/(shared)/inspect_event",
                       params: {
@@ -180,10 +180,9 @@ export default function GeoMap() {
                     });
                   }}
                 >
-                  <FontAwesome5 name="map-marker" size={24} color="black" />
+                  <FontAwesome5 name="map-marker" size={24} color="red" />
                   <Callout onPress={() => setSelectedEvent(event)}>
                     <View style={styles.previewCallout}>
-                      {/* Text Info (top) */}
                       <View style={styles.previewTextBox}>
                         <Text style={styles.previewTitle} numberOfLines={1}>{event.title ?? 'Untitled Event'}</Text>
                         <Text style={styles.previewInfo}>{formatTime(event.start_time, 'short')}</Text>
@@ -205,7 +204,7 @@ export default function GeoMap() {
           animationType="slide"
           onRequestClose={() => setSelectedEvent(null)}
         >
-          <View style={styles.modalOverlay}>
+          <View style={styles.modalOverlay}> {/* Modal appears after tapping on Callout */}
             <View style={styles.modalBox}>
               {/* Close Button */}
               <TouchableOpacity
