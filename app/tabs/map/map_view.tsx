@@ -1,11 +1,13 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import * as Location from 'expo-location';
 import { Stack } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Linking, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Callout, MAP_TYPES, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { supabase } from "../../../lib/supabase";
 import type { UserEvent } from "../../../types/user_event";
+const router = require("expo-router").useRouter();
 
 export default function GeoMap() {
   type Region = {
@@ -18,8 +20,8 @@ export default function GeoMap() {
   const [mapRegion] = useState({
     latitude: 38.7946,
     longitude: -99.5348,
-    latitudeDelta: 35,
-    longitudeDelta: 35,
+    latitudeDelta: 5,
+    longitudeDelta: 5,
   });
   const mapRef = useRef<MapView | null>(null);
 
@@ -84,46 +86,57 @@ export default function GeoMap() {
       .order("upvotes", { ascending: false })
       .limit(10);
 
-    if (error) {
-      console.error(error);
-    } else if ( // if same data as before, do not update state
-      !Array.isArray(data) ||
-      data.length !== eventsInView.length ||
-      data.some((d, i) => d.id !== eventsInView[i]?.id)
-    ) {
-      setEvents(data || []);
-    }
+    if (error) console.error(error);
+    else setEvents(data || []);
   }
 
-  const fetchTimeout = useRef<NodeJS.Timeout | number | null>(null);
-
+  // fetch events immediately on region change
   const handleRegionChangeComplete = (region: Region) => {
     setCurrentRegion(region);
-
-    // Clear any existing timeout
-    if (fetchTimeout.current) {
-      clearTimeout(fetchTimeout.current);
-    }
-
-    // Set a new timeout to fetch after 1.5 seconds of inactivity
-    fetchTimeout.current = setTimeout(() => {
-      fetchEventsInView(region);
-    }, 1500);
+    fetchEventsInView(region);
   };
 
   useEffect(() => {
     userLocation();
     fetchEventsInView(mapRegion);
+  },[]);
 
-    // Cleanup timeout on unmount
-    return () => {
-      if (fetchTimeout.current) {
-        clearTimeout(fetchTimeout.current);
-      }
-    };
-  }, []);
 
   const [showMapTypeOptions, setShowMapTypeOptions] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<UserEvent | null>(null);
+
+  const formatTime = (dateStr: string | undefined, mode: 'short' | 'full' = 'full') => {
+    if (!dateStr) return "N/A";
+    const eventDate = new Date(dateStr);
+
+    const timeStr = eventDate.toLocaleString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+
+    if (mode === 'short') {
+      const weekday = eventDate.toLocaleString('en-US', { weekday: 'long' });
+      return `${weekday}, ${timeStr}`;
+    }
+
+    const day = eventDate.getDate();
+    const month = eventDate.toLocaleString('en-US', { month: 'long' });
+    const weekday = eventDate.toLocaleString('en-US', { weekday: 'long' });
+
+    const getOrdinal = (n: number) => {
+      if (n > 3 && n < 21) return 'th';
+      switch (n % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+
+    return `${month} ${day}${getOrdinal(day)}, ${weekday}, ${timeStr}`;
+  };
 
   return (
     <>
@@ -138,46 +151,110 @@ export default function GeoMap() {
           mapType={chosenType.type}
           showsUserLocation={true}
         >
-            {eventsInView.map((event) => (
-            <Marker
-              key={event.id}
-              coordinate={{ latitude: event.latitude, longitude: event.longitude }}
-            >
-              <Callout tooltip={false}>
-              <View style={styles.calloutContainer}>
-                {/* X button to remove event */}
-                <TouchableOpacity
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 8,
-                  zIndex: 2,
-                  padding: 4,
-                }}
-                onPress={() => setEvents((prev) => prev.filter(e => e.id !== event.id))}
+            {eventsInView
+              .filter(event =>
+                typeof event.latitude === 'number' &&
+                typeof event.longitude === 'number' &&
+                !isNaN(event.latitude) &&
+                !isNaN(event.longitude)
+              )
+              .map((event) => (
+                <Marker
+                  key={event.id}
+                  coordinate={{ latitude: event.latitude, longitude: event.longitude }}
+                  onCalloutPress={() => {
+                    router.push({
+                      pathname: "/(shared)/inspect_event",
+                      params: {
+                        event: JSON.stringify({
+                          id: event.id,
+                          title: event.title,
+                          description: event.description,
+                          start_time: event.start_time,
+                          location_name: event.location_name,
+                          upvotes: event.upvotes,
+                        }),
+                        user: JSON.stringify(null),
+                      },
+                    });
+                  }}
                 >
-                <MaterialIcons name="close" size={20} color="#888" />
-                </TouchableOpacity>
-                <Text style={[styles.calloutTitle, {paddingRight: 28}]}>{event.title}</Text>
-                <Text style={styles.calloutDescription}>{event.description}</Text>
-                <Text style={styles.calloutDetail}>
-                <Text style={styles.calloutLabel}>Time: </Text>
-                {event.start_time
-                  ? new Date(event.start_time).toLocaleString()
-                  : "N/A"}
-                </Text>
-                <Text style={styles.calloutDetail}>
-                <Text style={styles.calloutLabel}>Location: </Text>
-                {`${event.location_name}`}
-                </Text>
-                <TouchableOpacity style={styles.calloutButton}>
-                <Text style={styles.calloutButtonText}>Open Event</Text>
-                </TouchableOpacity>
-              </View>
-              </Callout>
-            </Marker>
+                  <Callout onPress={() => setSelectedEvent(event)}>
+                    <View style={styles.previewCallout}>
+                      {/* Text Info (top) */}
+                      <View style={styles.previewTextBox}>
+                        <Text style={styles.previewTitle} numberOfLines={1}>{event.title ?? 'Untitled Event'}</Text>
+                        <Text style={styles.previewInfo}>{formatTime(event.start_time, 'short')}</Text>
+                        <Text style={styles.previewInfo}><FontAwesome6 name="circle-up" size={13} color="red" /> {event.upvotes ?? 0} upvotes</Text>
+                      </View>
+
+                      {/* Image or Placeholder (bottom) */}
+                      <View style={styles.calloutImageBox}>
+                        <Text style={{ color: "#888" }}>[Image Here]</Text>
+                      </View>
+                    </View>
+                  </Callout>
+                </Marker>
             ))}
         </MapView>
+        <Modal
+          visible={!!selectedEvent}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelectedEvent(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              {/* Close Button */}
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setSelectedEvent(null)}
+              >
+                <MaterialIcons name="close" size={24} color="gray" />
+              </TouchableOpacity>
+
+              {/* Text Info */}
+              <View style={styles.modalContent}>
+                <Text style={styles.calloutTitle}>{selectedEvent?.title}</Text>
+                <Text style={styles.calloutDescription}>{selectedEvent?.description}</Text>
+                <Text style={styles.calloutDetail}>
+                  <Text style={styles.calloutLabel}>Time: </Text>
+                  {formatTime(selectedEvent?.start_time)}
+                </Text>
+                <Text style={styles.calloutDetail}>
+                  <Text style={styles.calloutLabel}>Location: </Text>
+                  {selectedEvent?.location_name}
+                </Text>
+                <Text style={styles.calloutDetail}>
+                  <FontAwesome6 name="circle-up" size={15} color="red" />{" "}
+                  {selectedEvent?.upvotes ?? 0} upvotes
+                </Text>
+              </View>
+
+              {/* Image Section */}
+              <View style={styles.modalImageBox}>
+                <Text style={{ color: "#888" }}>[Image Here]</Text>
+              </View>
+
+              {/* Open Event Button */}
+              <TouchableOpacity
+                style={styles.calloutButton}
+                onPress={() => {
+                  router.push({
+                    pathname: "/(shared)/inspect_event",
+                    params: {
+                      event: JSON.stringify(selectedEvent),
+                      user: JSON.stringify(null),
+                    },
+                  });
+                  setSelectedEvent(null);
+                }}
+              >
+                <Text style={styles.calloutButtonText}>Open Event</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
         <View style={styles.mapOptionsContainer}>
           <TouchableOpacity style={styles.mapOptions} onPress={userLocation}>
             <MaterialIcons name="my-location" size={33} color="white" />
@@ -190,35 +267,36 @@ export default function GeoMap() {
             </TouchableOpacity>
             {showMapTypeOptions && (
             <View style={styles.mapTypeOptionsContainer}>
-              {terrain_types.map((type, idx) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                styles.mapTypeOption,
-                chosenType.type === type && styles.selectedMapTypeOption,
-                ]}
-                onPress={() => {
-                setMapType({ type });
-                setShowMapTypeOptions(false);
-                }}
-              >
-                <MaterialIcons
-                name={
-                  type === MAP_TYPES.STANDARD
-                  ? "map"
-                  : type === MAP_TYPES.TERRAIN
-                  ? "terrain"
-                  : type === MAP_TYPES.HYBRID
-                  ? "satellite"
-                  : "layers"
-                }
-                size={24}
-                color={chosenType.type === type ? "white" : "black"}
-                />
-              </TouchableOpacity>
+              {terrain_types.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.mapTypeOption,
+                    chosenType.type === type && styles.selectedMapTypeOption,
+                  ]}
+                  onPress={() => {
+                    setMapType({ type });
+                    setShowMapTypeOptions(false);
+                    console.log('Map type changed to', type);
+                  }}
+                >
+                  <MaterialIcons
+                    name={
+                      type === MAP_TYPES.STANDARD
+                        ? "map"
+                        : type === MAP_TYPES.TERRAIN
+                        ? "terrain"
+                        : type === MAP_TYPES.HYBRID
+                        ? "satellite"
+                        : "layers"
+                    }
+                    size={24}
+                    color={chosenType.type === type ? "white" : "black"}
+                  />
+                </TouchableOpacity>
               ))}
             </View>
-            )}
+          )}
         </View>
       </View>
     </>
@@ -226,6 +304,82 @@ export default function GeoMap() {
 }
 
 const styles = StyleSheet.create({
+  previewCallout: {
+  flexDirection: 'column',
+  width: 240,
+  height: 180,
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  overflow: 'hidden',
+  padding: 8,
+},
+
+previewTextBox: {
+  paddingBottom: 6,
+},
+
+previewTitle: {
+  fontWeight: 'bold',
+  fontSize: 16,
+  color: '#222',
+  marginBottom: 2,
+},
+
+previewInfo: {
+  fontSize: 13,
+  color: '#555',
+},
+
+calloutImageBox: {
+  flex: 1,
+  backgroundColor: '#f0f0f0',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 10,
+  marginTop: 6,
+},
+
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.4)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 20,
+},
+
+modalBox: {
+  backgroundColor: 'white',
+  borderRadius: 16,
+  paddingTop: 30,
+  paddingBottom: 20,
+  paddingHorizontal: 20,
+  width: '90%',
+  alignItems: 'center',
+},
+
+modalCloseButton: {
+  position: 'absolute',
+  top: 10,
+  right: 10,
+  padding: 5,
+  zIndex: 10,
+},
+
+modalContent: {
+  width: '100%',
+  paddingBottom: 12,
+},
+
+modalImageBox: {
+  height: 160,
+  width: '100%',
+  backgroundColor: '#f0f0f0',
+  borderRadius: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 12,
+  marginBottom: 12,
+},
   mapOptionsContainer: {
     position: 'absolute', 
     bottom: 10, 
@@ -275,7 +429,7 @@ const styles = StyleSheet.create({
     minWidth: 240,
     maxWidth: 300,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderRadius: 14,
     elevation: 6,
     shadowColor: '#000',
@@ -343,3 +497,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
