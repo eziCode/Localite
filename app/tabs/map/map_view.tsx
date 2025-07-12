@@ -186,7 +186,7 @@ export default function GeoMap() {
                     });
                   }}
                 >
-                  <FontAwesome5 name="map-marker" size={24} color="red" />
+                  <FontAwesome5 name="map-marker" size={24} color="#D2042D" /> 
                   <Callout onPress={() => setSelectedEvent(event)}>
                     <View style={styles.previewCallout}>
                       <View style={styles.previewTextBox}>
