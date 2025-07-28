@@ -115,4 +115,3 @@ supabase functions deploy rank_events
 
 - **Ezra Akresh**
 - **Anshdeep Singh**
-- **David Black**
