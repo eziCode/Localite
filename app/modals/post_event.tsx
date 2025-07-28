@@ -88,7 +88,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": "AIzaSyB3FvzVv3IFEEDqPI_7170CgYk0NWudrMI",
+            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY,
             "X-Goog-FieldMask":
               "suggestions.placePrediction.text.text,suggestions.placePrediction.placeId",
           },
@@ -155,7 +155,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "X-Goog-Api-Key": "AIzaSyB3FvzVv3IFEEDqPI_7170CgYk0NWudrMI",
+            "X-Goog-Api-Key": process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY,
             "X-Goog-FieldMask": "location",
           },
         }
