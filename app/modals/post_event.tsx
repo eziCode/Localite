@@ -29,6 +29,7 @@ type PostEventModalProps = {
 type Prediction = {
   id: string;
   text: string;
+  placeId: string;
 };
 
 function getAgeRange(avgAge: number) {
@@ -107,9 +108,9 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       const suggestions = json.suggestions ?? [];
 
       const parsed: Prediction[] = suggestions.map((s: any, idx: number) => {
-        const text =
-          s.placePrediction?.text?.text || s.queryPrediction?.text?.text || "";
-        return { id: idx.toString(), text };
+        const text = s.placePrediction?.text?.text || s.queryPrediction?.text?.text || "";
+        const placeId = s.placePrediction?.placeId || s.queryPrediction?.placeId || "";
+        return { id: idx.toString(), text, placeId };
       });
 
       setPredictions(parsed);
@@ -118,6 +119,29 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       setPredictions([]);
     }
   };
+
+  const fetchPlaceCoordinates = async (placeId: string) => {
+    const response = await fetch(
+      `https://places.googleapis.com/v1/places/${placeId}?fields=location`,
+      {
+        headers: {
+          "X-Goog-Api-Key": "AIzaSyB3FvzVv3IFEEDqPI_7170CgYk0NWudrMI",
+          "X-Goog-FieldMask": "location",
+        },
+      }
+    );
+    const json = await response.json();
+    if (json.error) {
+      console.error("Error fetching place details:", json.error);
+      return;
+    }
+
+    const location = json.location;
+    if (location?.latitude && location?.longitude) {
+      setCoords({ latitude: location.latitude, longitude: location.longitude });
+    }
+  };
+
 
   const handlePost = async () => {
     const newErrors: string[] = [];
@@ -337,6 +361,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                   key={item.id}
                   onPress={() => {
                     setLocation(item.text);
+                    fetchPlaceCoordinates(item.placeId);
                     setPredictions([]);
                   }}
                   style={styles.suggestion}

@@ -162,7 +162,7 @@ export default function GeoMap() {
                 <Marker
                   key={event.id}
                   coordinate={{ latitude: event.latitude, longitude: event.longitude }}
-                  onCalloutPress={() => { {/* Callout appears after tapping on Marker */}
+                  onCalloutPress={() => {
                     router.push({
                       pathname: "/(shared)/inspect_event",
                       params: {
@@ -179,7 +179,9 @@ export default function GeoMap() {
                     });
                   }}
                 >
-                  <FontAwesome5 name="map-marker" size={24} color="#D2042D" /> 
+                  <View>
+                    <FontAwesome5 name="map-marker" size={24} color="#D2042D" />
+                  </View>
                   <Callout onPress={() => setSelectedEvent(event)}>
                     <View style={styles.previewCallout}>
                       <View style={styles.previewTextBox}>
