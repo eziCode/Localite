@@ -39,6 +39,7 @@ export default function GeoMap() {
           }
         }},
       ]);
+      return; // Add return here to prevent continuing without permission
     }
 
     let location = await Location.getCurrentPositionAsync({});
@@ -101,7 +102,6 @@ export default function GeoMap() {
     userLocation();
     fetchEventsInView(mapRegion);
   },[]);
-
 
   const [showMapTypeOptions, setShowMapTypeOptions] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<UserEvent | null>(null);
@@ -185,27 +185,34 @@ export default function GeoMap() {
                   <Callout onPress={() => setSelectedEvent(event)}>
                     <View style={styles.previewCallout}>
                       <View style={styles.previewTextBox}>
-                        <Text style={styles.previewTitle} numberOfLines={1}>{event.title ?? 'Untitled Event'}</Text>
-                        <Text style={styles.previewInfo}>{formatTime(event.start_time, 'short')}</Text>
-                        <Text style={styles.previewInfo}><FontAwesome6 name="circle-up" size={13} color="red" /> {event.upvotes ?? 0} upvotes</Text>
+                        <Text style={styles.previewTitle} numberOfLines={1}>
+                          {event.title || 'Untitled Event'}
+                        </Text>
+                        <Text style={styles.previewInfo}>
+                          {formatTime(event.start_time, 'short')}
+                        </Text>
+                        <Text style={styles.previewInfo}>
+                          <FontAwesome6 name="circle-up" size={13} color="red" /> {event.upvotes || 0} upvotes
+                        </Text>
                       </View>
 
                       {/* Image Placeholder */}
                       <View style={styles.calloutImageBox}>
-                        <Text style={{ color: "#888" }}>[Image Here]</Text>
+                        <Text style={{ color: "#888" }}>Image Here</Text>
                       </View>
                     </View>
                   </Callout>
                 </Marker>
             ))}
         </MapView>
+        
         <Modal
           visible={!!selectedEvent}
           transparent
           animationType="slide"
           onRequestClose={() => setSelectedEvent(null)}
         >
-          <View style={styles.modalOverlay}> {/* Modal appears after tapping on Callout */}
+          <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
               {/* Close Button */}
               <TouchableOpacity
@@ -217,25 +224,29 @@ export default function GeoMap() {
 
               {/* Text Info */}
               <View style={styles.modalContent}>
-                <Text style={styles.calloutTitle}>{selectedEvent?.title}</Text>
-                <Text style={styles.calloutDescription}>{selectedEvent?.description}</Text>
+                <Text style={styles.calloutTitle}>
+                  {selectedEvent?.title || 'Untitled Event'}
+                </Text>
+                <Text style={styles.calloutDescription}>
+                  {selectedEvent?.description || 'No description available'}
+                </Text>
                 <Text style={styles.calloutDetail}>
                   <Text style={styles.calloutLabel}>Time: </Text>
-                  {formatTime(selectedEvent?.start_time)}
+                  <Text>{formatTime(selectedEvent?.start_time)}</Text>
                 </Text>
                 <Text style={styles.calloutDetail}>
                   <Text style={styles.calloutLabel}>Location: </Text>
-                  {selectedEvent?.location_name}
+                  <Text>{selectedEvent?.location_name || 'No location specified'}</Text>
                 </Text>
                 <Text style={styles.calloutDetail}>
-                  <FontAwesome6 name="circle-up" size={15} color="red" />{" "}
-                  {selectedEvent?.upvotes ?? 0} upvotes
+                  <FontAwesome6 name="circle-up" size={15} color="red" />
+                  <Text> {selectedEvent?.upvotes || 0} upvotes</Text>
                 </Text>
               </View>
 
               {/* Image Section */}
               <View style={styles.modalImageBox}>
-                <Text style={{ color: "#888" }}>[Image Here]</Text>
+                <Text style={{ color: "#888" }}>Image Here</Text>
               </View>
 
               {/* Open Event Button */}
@@ -257,17 +268,18 @@ export default function GeoMap() {
             </View>
           </View>
         </Modal>
+        
         <View style={styles.mapOptionsContainer}>
           <TouchableOpacity style={styles.mapOptions} onPress={userLocation}>
             <MaterialIcons name="my-location" size={33} color="white" />
           </TouchableOpacity>
-            <TouchableOpacity
+          <TouchableOpacity
             style={styles.mapOptions}
             onPress={() => setShowMapTypeOptions((prev) => !prev)}
-            >
+          >
             <MaterialIcons name="map" size={33} color="white" />
-            </TouchableOpacity>
-            {showMapTypeOptions && (
+          </TouchableOpacity>
+          {showMapTypeOptions && (
             <View style={styles.mapTypeOptionsContainer}>
               {terrain_types.map((type) => (
                 <TouchableOpacity
@@ -306,82 +318,83 @@ export default function GeoMap() {
 }
 
 const styles = StyleSheet.create({
-previewCallout: {
-  flexDirection: 'column',
-  width: 240,
-  height: 180,
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  overflow: 'hidden',
-  padding: 8,
-},
+  previewCallout: {
+    flexDirection: 'column',
+    width: 240,
+    height: 180,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    padding: 8,
+  },
 
-previewTextBox: {
-  paddingBottom: 6,
-},
+  previewTextBox: {
+    paddingBottom: 6,
+  },
 
-previewTitle: {
-  fontWeight: 'bold',
-  fontSize: 16,
-  color: '#222',
-  marginBottom: 2,
-},
+  previewTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#222',
+    marginBottom: 2,
+  },
 
-previewInfo: {
-  fontSize: 13,
-  color: '#555',
-},
+  previewInfo: {
+    fontSize: 13,
+    color: '#555',
+  },
 
-calloutImageBox: {
-  flex: 1,
-  backgroundColor: '#f0f0f0',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderRadius: 10,
-  marginTop: 6,
-},
+  calloutImageBox: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    marginTop: 6,
+  },
 
-modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: 20,
-},
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
 
-modalBox: {
-  backgroundColor: 'white',
-  borderRadius: 16,
-  paddingTop: 30,
-  paddingBottom: 20,
-  paddingHorizontal: 20,
-  width: '90%',
-  alignItems: 'center',
-},
+  modalBox: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    paddingTop: 30,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    width: '90%',
+    alignItems: 'center',
+  },
 
-modalCloseButton: {
-  position: 'absolute',
-  top: 10,
-  right: 10,
-  padding: 5,
-  zIndex: 10,
-},
+  modalCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 5,
+    zIndex: 10,
+  },
 
-modalContent: {
-  width: '100%',
-  paddingBottom: 12,
-},
+  modalContent: {
+    width: '100%',
+    paddingBottom: 12,
+  },
 
-modalImageBox: {
-  height: 160,
-  width: '100%',
-  backgroundColor: '#f0f0f0',
-  borderRadius: 10,
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginTop: 12,
-  marginBottom: 12,
-},
+  modalImageBox: {
+    height: 160,
+    width: '100%',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  
   mapOptionsContainer: {
     position: 'absolute', 
     bottom: 10, 
@@ -391,6 +404,7 @@ modalImageBox: {
     alignItems: 'center',
     flexDirection: 'column',
   },
+  
   mapTypeOptionsContainer: {
     position: 'absolute',
     bottom: 70,
@@ -405,6 +419,7 @@ modalImageBox: {
     shadowRadius: 2,
     zIndex: 10,
   },
+  
   mapTypeOption: {
     padding: 8,
     borderRadius: 6,
@@ -412,9 +427,11 @@ modalImageBox: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  
   selectedMapTypeOption: {
     backgroundColor: 'green',
   },
+  
   mapOptions: {
     position: 'relative',
     justifyContent: 'center',
@@ -426,6 +443,7 @@ modalImageBox: {
     marginBottom: 10,
     opacity: 0.8,
   },
+  
   // Callout styles
   calloutContainer: {
     minWidth: 240,
@@ -440,26 +458,31 @@ modalImageBox: {
     shadowRadius: 4,
     alignItems: 'flex-start',
   },
+  
   calloutTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 6,
     color: '#222',
   },
+  
   calloutDescription: {
     fontSize: 15,
     marginBottom: 10,
     color: '#444',
   },
+  
   calloutDetail: {
     fontSize: 14,
     marginBottom: 4,
     color: '#333',
   },
+  
   calloutLabel: {
     fontWeight: 'bold',
     color: '#222',
   },
+  
   calloutButton: {
     marginTop: 10,
     backgroundColor: '#2196F3',
@@ -469,23 +492,27 @@ modalImageBox: {
     alignSelf: 'stretch',
     alignItems: 'center',
   },
+  
   calloutButtonText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
   },
+  
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#fff",
   },
+  
   text: {
     fontSize: 22,
     fontWeight: "600",
     color: "#222",
     marginBottom: 32,
   },
+  
   logoutButton: {
     marginTop: 500,
     paddingVertical: 12,
@@ -493,10 +520,10 @@ modalImageBox: {
     backgroundColor: "#7c3aed",
     borderRadius: 8,
   },
+  
   logoutText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,
   },
 });
-
