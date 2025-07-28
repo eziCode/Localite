@@ -1,5 +1,5 @@
 export type UserEvent = {
-    id: number;
+    id: string;
     created_at: string;
     title: string;
     description?: string;

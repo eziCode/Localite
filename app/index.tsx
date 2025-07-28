@@ -1,34 +1,53 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text } from "react-native";
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  Text
+} from "react-native";
 import { supabase } from "../lib/supabase";
 
+// Module-level counter to track mounts in this session
+let mountCount = 0;
 
 export default function Index() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [destination, setDestination] = useState<null | "/tabs/groups" | "/login_components/login">(null);
+  const [showSplash, setShowSplash] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    let authDone = false;
+    let isMounted = true;
     let timerDone = false;
+    let authDone = false;
+
+    mountCount += 1;
+    const isFirstMount = mountCount === 1;
+    setShowSplash(isFirstMount);
 
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!isMounted) return;
       setDestination(session ? "/tabs/groups" : "/login_components/login");
       authDone = true;
       if (timerDone) setReady(true);
     };
 
-    const timer = setTimeout(() => {
+    // Always use a timer: 500ms for first mount, 1000ms otherwise
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    timer = setTimeout(() => {
       timerDone = true;
       if (authDone) setReady(true);
-    }, 500);
+    }, isFirstMount ? 250 : 1000);
 
     checkAuth();
 
-    return () => clearTimeout(timer);
+    return () => {
+      isMounted = false;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -41,11 +60,19 @@ export default function Index() {
         router.replace(destination);
       });
     }
-  }, [ready, destination]);
+  }, [ready, destination, fadeAnim, router]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <Text style={styles.text}>Loading...</Text>
+      {showSplash ? (
+        <Image
+          source={require("../assets/images/localite_logo.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      ) : (
+        <Text style={styles.text}>Loading...</Text>
+      )}
     </Animated.View>
   );
 }
@@ -55,8 +82,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#faf7f3",
     zIndex: 10,
+  },
+  logo: {
+    width: 180,
+    height: 180,
+    marginBottom: 20,
+  },
+  tagline: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#444",
   },
   text: {
     fontSize: 22,

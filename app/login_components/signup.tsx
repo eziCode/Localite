@@ -1,3 +1,4 @@
+import { hasInappropriateLanguage } from "@/lib/helper_functions/hasInappropriateLanguage";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -28,6 +29,11 @@ export default function Signup() {
       setError("Please fill in all fields.");
       return;
     }
+    if (await hasInappropriateLanguage(username)) {
+      setError("Username contains inappropriate language.");
+      return;
+    }
+    
     if (isNaN(Number(age)) || Number(age) < 0) {
       setError("Please enter a valid age.");
       return;
@@ -158,7 +164,7 @@ export default function Signup() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fdf6ee",
+    backgroundColor: "#FAFAFB", // Light neutral background
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -166,36 +172,37 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF", // Card surface
     padding: 24,
     borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     elevation: 8,
   },
   title: {
     fontSize: 26,
-    fontWeight: "600",
+    fontWeight: "700",
     marginBottom: 24,
     textAlign: "center",
-    color: "#222",
+    color: "#1E1E1F", // Dark slate text
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#f3f3f3",
+    backgroundColor: "#F1F1F3", // Light gray input background
+    color: "#1E1E1F",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     fontSize: 16,
-    lineHeight: 22,
     width: "100%",
     marginBottom: 12,
   },
   button: {
-    backgroundColor: "#ff5f05",
+    backgroundColor: "#FF5E5B", // Neon Coral
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: "center",
     marginTop: 8,
     marginBottom: 16,
@@ -204,23 +211,23 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+    letterSpacing: 0.5,
   },
   linkText: {
     textAlign: "center",
     fontSize: 14,
-    color: "#444",
+    color: "#4D4D4D", // Medium gray text
     marginTop: 8,
     fontWeight: "500",
-    textDecorationColor: "#ccc",
-    textDecorationStyle: "dotted",
-    opacity: 0.9,
+    textDecorationLine: "underline",
+    textDecorationColor: "#FF5E5B",
   },
   errorContainer: {
-    backgroundColor: "rgba(255, 85, 85, 0.1)",
-    borderColor: "#ff5555",
+    backgroundColor: "rgba(255, 94, 91, 0.08)", // Soft coral background
+    borderColor: "#FF5E5B",
     borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -228,7 +235,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorText: {
-    color: "#cc0000",
+    color: "#FF5E5B",
     fontSize: 14,
     textAlign: "center",
     fontWeight: "500",

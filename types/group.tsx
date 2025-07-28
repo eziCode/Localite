@@ -3,7 +3,7 @@ export type Group = {
   created_at: string;
   name: string;
   description?: string;
-  invite_code?: string;
+  join_code?: string;
   creator_id: string;
   members: string[];
   vibes?: string[];
