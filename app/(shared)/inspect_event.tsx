@@ -143,15 +143,24 @@ const InspectEvent = () => {
         <View style={styles.upvoteSection}>
           <TouchableOpacity 
             onPress={handleUpvotePress}
-            style={[styles.upvoteButton, hasUpvoted && styles.upvoteButtonActive]}
+            style={[
+              styles.upvoteButton,
+              hasUpvoted && styles.upvoteButtonActive
+            ]}
             activeOpacity={0.8}
           >
             <Ionicons 
               name={hasUpvoted ? "heart" : "heart-outline"} 
               size={28} 
-              color={hasUpvoted ? "#ff4757" : "#ff4757"} 
+              color={hasUpvoted ? "#fff" : "#ff4757"} 
+              style={hasUpvoted ? { marginRight: 0 } : undefined}
             />
-            <Text style={styles.upvoteText}>
+            <Text
+              style={[
+                styles.upvoteText,
+                hasUpvoted && styles.upvoteTextActive
+              ]}
+            >
               {eventUpvotes} {eventUpvotes === 1 ? 'like' : 'likes'}
             </Text>
           </TouchableOpacity>
@@ -308,15 +317,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 6,
+    transitionProperty: 'background-color,color', // for web, ignored on native
+    transitionDuration: '200ms',
   },
   upvoteButtonActive: {
     backgroundColor: '#FF5E5B',
+    borderWidth: 0,
+    // Remove border and make background solid red
   },
   upvoteText: {
     marginLeft: 10,
     color: '#FF5E5B',
     fontSize: 16,
     fontWeight: '600',
+    transitionProperty: 'color', // for web, ignored on native
+    transitionDuration: '200ms',
+  },
+  upvoteTextActive: {
+    color: '#fff',
   },
   contentContainer: {
     paddingHorizontal: 24,
