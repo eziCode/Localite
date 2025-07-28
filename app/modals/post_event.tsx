@@ -161,6 +161,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
         console.error("Error fetching average age:", error);
         return;
       }
+      console.log("coords", coords);
       const { latitude: locationLatitude, longitude: locationLongitude } = coords || {};
 
       const { minAge, maxAge } = getAgeRange(data);

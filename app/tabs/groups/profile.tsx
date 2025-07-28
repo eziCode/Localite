@@ -44,6 +44,11 @@ export default function UserProfile() {
   const [profilePicture, setProfilePicture] = useState<React.ReactNode>(
     <Ionicons name="person-circle-outline" size={80} color="#d1d5db" />
   );
+  
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login_components/login");
+  };
 
   const fetchEvents = useCallback(async () => {
     const { data, error } = await supabase
@@ -214,7 +219,7 @@ export default function UserProfile() {
             <Text style={styles.greetingText}>
               {chosenGreeting.greeting}, {userName}!
             </Text>
-            <Text style={styles.languageText}>{chosenGreeting.language}</Text>
+            <Text style={styles.languageText}>{"Hello in " + chosenGreeting.language}</Text>
             {joinDate && <Text style={styles.subtext}>Joined on {joinDate}</Text>}
             <TouchableOpacity
               activeOpacity={0.7}
@@ -269,12 +274,35 @@ export default function UserProfile() {
             <Text style={styles.noEventsText}>No events on this day.</Text>
           )}
         </View>
+        {/* Logout Button */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  logoutButton: {
+    marginTop: 24,
+    backgroundColor: '#7c3aed',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  logoutText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
