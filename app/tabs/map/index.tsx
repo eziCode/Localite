@@ -1,6 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import type { User } from "@supabase/supabase-js";
 import * as Location from 'expo-location';
 import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -98,9 +99,19 @@ export default function GeoMap() {
     fetchEventsInView(region);
   };
 
+  // Add user state
+  const [user, setUser] = useState<User | null>(null);
+
   useEffect(() => {
+    // Fetch user on mount
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    fetchUser();
     userLocation();
     fetchEventsInView(mapRegion);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   const [showMapTypeOptions, setShowMapTypeOptions] = useState(false);
@@ -241,7 +252,7 @@ export default function GeoMap() {
                     pathname: "/(shared)/inspect_event",
                     params: {
                       event: JSON.stringify(selectedEvent),
-                      user: JSON.stringify(null),
+                      user: JSON.stringify(user),
                     },
                   });
                   setSelectedEvent(null);

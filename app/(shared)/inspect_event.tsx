@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { UserEvent } from '@/types/user_event';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -102,6 +102,24 @@ const InspectEvent = () => {
     }
     return `${diffMinutes}m`;
   };
+
+  // Fetch upvote_user_ids on mount and set hasUpvoted
+  useEffect(() => {
+    const fetchUpvoteStatus = async () => {
+      if (!event?.id || !user?.id) return;
+      const { data, error } = await supabase
+        .from('events')
+        .select('upvote_user_ids')
+        .eq('id', event.id)
+        .single();
+      if (!error && data?.upvote_user_ids && Array.isArray(data.upvote_user_ids)) {
+        setHasUpvoted(data.upvote_user_ids.includes(user.id));
+      } else {
+        setHasUpvoted(false);
+      }
+    };
+    fetchUpvoteStatus();
+  }, [event?.id, user?.id]);
 
   if (!event) {
     return (
