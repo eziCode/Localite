@@ -9,12 +9,6 @@ import MapView, { Callout, MAP_TYPES, Marker } from 'react-native-maps';
 import { supabase } from "../../../lib/supabase";
 import type { UserEvent } from "../../../types/user_event";
 
-// EZRA Todo: add user implementation like you did in own_groups_view.tsx below:    (Only if its necessary to do so, I'm not completely sure what that part of the code does, so im leaving it to you)
-//                                                                                 ---->     go to line 253 and 256  <----
-// const { group: groupStr, user: userStr } = useLocalSearchParams();
-// const [group, setGroup] = useState<Group>(JSON.parse(groupStr as string));
-// const user: import("@supabase/supabase-js").User = JSON.parse(userStr as string);      delete these comments after
-
 export default function GeoMap() {
   const router = useRouter();
   type Region = {
@@ -250,10 +244,9 @@ export default function GeoMap() {
                     pathname: "/(shared)/inspect_event",
                     params: {
                       event: JSON.stringify(selectedEvent),
-                      user: JSON.stringify(null),                  // Ezra implement this if necessary.
+                      user: JSON.stringify(null),
                     },
                   });
-                  // uploadUserInteraction(user.id, event.id, "viewed_event", "event");     <--------   Ezra: Implement this if necessary. 
                   setSelectedEvent(null);
                 }}
               >
