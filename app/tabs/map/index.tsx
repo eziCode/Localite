@@ -162,27 +162,11 @@ export default function GeoMap() {
                 <Marker
                   key={event.id}
                   coordinate={{ latitude: event.latitude, longitude: event.longitude }}
-                  onCalloutPress={() => {
-                    router.push({
-                      pathname: "/(shared)/inspect_event",
-                      params: {
-                        event: JSON.stringify({
-                          id: event.id,
-                          title: event.title,
-                          description: event.description,
-                          start_time: event.start_time,
-                          location_name: event.location_name,
-                          upvotes: event.upvotes,
-                        }),
-                        user: JSON.stringify(null),
-                      },
-                    });
-                  }}
                 >
                   <View>
                     <FontAwesome5 name="map-marker" size={24} color="#D2042D" />
                   </View>
-                  <Callout onPress={() => setSelectedEvent(event)}>
+                  <Callout onPress={() => setSelectedEvent(event)} tooltip={false}>
                     <View style={styles.previewCallout}>
                       <View style={styles.previewTextBox}>
                         <Text style={styles.previewTitle} numberOfLines={1}>
@@ -209,7 +193,7 @@ export default function GeoMap() {
         <Modal
           visible={!!selectedEvent}
           transparent
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setSelectedEvent(null)}
         >
           <View style={styles.modalOverlay}>
