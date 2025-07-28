@@ -47,7 +47,9 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
   const [errors, setErrors] = useState<string[]>([]);
   const [checkingLanguage, setCheckingLanguage] = useState(false);
 
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  // Separate user location and selected location coordinates
+  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [selectedLocationCoords, setSelectedLocationCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
@@ -64,7 +66,7 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
       }
 
       const location = await Location.getCurrentPositionAsync({});
-      setCoords({
+      setUserCoords({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
@@ -72,7 +74,12 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
   }, []);
 
   const fetchAutocompletePredictions = async (input: string) => {
-    if (input.length < 2) return setPredictions([]);
+    if (input.length < 2) {
+      setPredictions([]);
+      // Clear selected location coordinates when user starts typing new location
+      setSelectedLocationCoords(null);
+      return;
+    }
 
     try {
       const response = await fetch(
@@ -83,13 +90,13 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             "Content-Type": "application/json",
             "X-Goog-Api-Key": "AIzaSyB3FvzVv3IFEEDqPI_7170CgYk0NWudrMI",
             "X-Goog-FieldMask":
-              "suggestions.placePrediction.text.text,suggestions.queryPrediction.text.text",
+              "suggestions.placePrediction.text.text,suggestions.placePrediction.placeId",
           },
           body: JSON.stringify({
             input,
             locationBias: {
               circle: {
-                center: coords || { latitude: 37.7749, longitude: -122.4194 },
+                center: userCoords || { latitude: 37.7749, longitude: -122.4194 },
                 radius: 5000.0,
               },
             },
@@ -107,11 +114,24 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
 
       const suggestions = json.suggestions ?? [];
 
-      const parsed: Prediction[] = suggestions.map((s: any, idx: number) => {
-        const text = s.placePrediction?.text?.text || s.queryPrediction?.text?.text || "";
-        const placeId = s.placePrediction?.placeId || s.queryPrediction?.placeId || "";
-        return { id: idx.toString(), text, placeId };
-      });
+      const parsed: Prediction[] = suggestions
+        .map((s: any, idx: number) => {
+          const placePrediction = s.placePrediction;
+          const queryPrediction = s.queryPrediction;
+          
+          if (placePrediction) {
+            return {
+              id: idx.toString(),
+              text: placePrediction.text?.text || "",
+              placeId: placePrediction.placeId || "",
+            };
+          } else if (queryPrediction) {
+            // Query predictions don't have placeIds, so we'll skip them
+            return null;
+          }
+          return null;
+        })
+        .filter((item: { placeId: string; } | null): item is Prediction => item !== null && item.placeId !== "");
 
       setPredictions(parsed);
     } catch (err) {
@@ -121,27 +141,68 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
   };
 
   const fetchPlaceCoordinates = async (placeId: string) => {
-    const response = await fetch(
-      `https://places.googleapis.com/v1/places/${placeId}?fields=location`,
-      {
-        headers: {
-          "X-Goog-Api-Key": "AIzaSyB3FvzVv3IFEEDqPI_7170CgYk0NWudrMI",
-          "X-Goog-FieldMask": "location",
-        },
-      }
-    );
-    const json = await response.json();
-    if (json.error) {
-      console.error("Error fetching place details:", json.error);
+    if (!placeId) {
+      console.error("No placeId provided");
       return;
     }
 
-    const location = json.location;
-    if (location?.latitude && location?.longitude) {
-      setCoords({ latitude: location.latitude, longitude: location.longitude });
+    try {
+      console.log("Fetching coordinates for placeId:", placeId);
+      
+      const response = await fetch(
+        `https://places.googleapis.com/v1/places/${placeId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": "AIzaSyB3FvzVv3IFEEDqPI_7170CgYk0NWudrMI",
+            "X-Goog-FieldMask": "location",
+          },
+        }
+      );
+
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
+      if (!response.ok) {
+        console.error("HTTP error:", response.status, response.statusText);
+        const errorText = await response.text();
+        console.error("Error response body:", errorText);
+        return;
+      }
+
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+
+      if (!responseText.trim()) {
+        console.error("Empty response received");
+        return;
+      }
+
+      const json = JSON.parse(responseText);
+      
+      if (json.error) {
+        console.error("API error:", json.error);
+        return;
+      }
+
+      const location = json.location;
+      if (location?.latitude && location?.longitude) {
+        console.log("Setting selected location coordinates:", location);
+        setSelectedLocationCoords({ 
+          latitude: location.latitude, 
+          longitude: location.longitude 
+        });
+      } else {
+        console.error("No location data in response:", json);
+      }
+    } catch (error) {
+      console.error("Error in fetchPlaceCoordinates:", error);
+      if (typeof error === "object" && error !== null && "message" in error) {
+        console.error("Error details:", (error as { message: string }).message);
+      }
     }
   };
-
 
   const handlePost = async () => {
     const newErrors: string[] = [];
@@ -153,6 +214,11 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     if (startTime && endTime && endTime <= startTime) {
       newErrors.push("startTimeInvalid");
       newErrors.push("endTimeInvalid");
+    }
+
+    // Check if we have coordinates for the selected location
+    if (!selectedLocationCoords) {
+      newErrors.push("locationCoordinates");
     }
 
     if (newErrors.length > 0) {
@@ -179,14 +245,15 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
     }
 
     const pushEvent = async () => {
-
       const { data, error } = await supabase.rpc("average_group_age_w_group_id_as_uuid", { group_id: current_group?.id || null });
       if (error) {
         console.error("Error fetching average age:", error);
         return;
       }
-      console.log("coords", coords);
-      const { latitude: locationLatitude, longitude: locationLongitude } = coords || {};
+      
+      // Use selected location coordinates instead of user coordinates
+      console.log("Using coordinates for event:", selectedLocationCoords);
+      const { latitude: locationLatitude, longitude: locationLongitude } = selectedLocationCoords || {};
 
       const { minAge, maxAge } = getAgeRange(data);
       const { error: insertError } = await supabase
@@ -340,7 +407,8 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
                 prev.filter(
                   e =>
                     e !== "location" &&
-                    e !== "eventExists"
+                    e !== "eventExists" &&
+                    e !== "locationCoordinates"
                   // Do NOT remove inappropriate language errors here
                 )
               );
@@ -349,6 +417,9 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
             style={[styles.input, hasError("location") && styles.inputError]}
           />
           {hasError("location") && <Text style={styles.fieldErrorText}>Location is required.</Text>}
+          {errors.includes("locationCoordinates") && (
+            <Text style={styles.fieldErrorText}>Please select a location from the dropdown.</Text>
+          )}
 
           {predictions.length > 0 && (
             <ScrollView
@@ -359,10 +430,13 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
               {predictions.map((item) => (
                 <TouchableOpacity
                   key={item.id}
-                  onPress={() => {
+                  onPress={async () => {
                     setLocation(item.text);
-                    fetchPlaceCoordinates(item.placeId);
                     setPredictions([]);
+                    // Clear location coordinates error when user selects a location
+                    setErrors((prev) => prev.filter(e => e !== "locationCoordinates"));
+                    // Fetch coordinates for the selected place
+                    await fetchPlaceCoordinates(item.placeId);
                   }}
                   style={styles.suggestion}
                 >
@@ -371,7 +445,6 @@ const PostEventModal = ({ onClose, user, current_group }: PostEventModalProps) =
               ))}
             </ScrollView>
           )}
-
 
           <TouchableOpacity
             onPress={() => {
