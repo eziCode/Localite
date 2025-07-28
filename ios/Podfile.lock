@@ -33,16 +33,16 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-client (5.1.8):
+  - expo-dev-client (5.2.0):
     - EXManifests
     - expo-dev-launcher
     - expo-dev-menu
     - expo-dev-menu-interface
     - EXUpdatesInterface
-  - expo-dev-launcher (5.1.11):
+  - expo-dev-launcher (5.1.12):
     - DoubleConversion
     - EXManifests
-    - expo-dev-launcher/Main (= 5.1.11)
+    - expo-dev-launcher/Main (= 5.1.12)
     - expo-dev-menu
     - expo-dev-menu-interface
     - ExpoModulesCore
@@ -72,7 +72,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-launcher/Main (5.1.11):
+  - expo-dev-launcher/Main (5.1.12):
     - DoubleConversion
     - EXManifests
     - expo-dev-launcher/Unsafe
@@ -105,7 +105,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-launcher/Unsafe (5.1.11):
+  - expo-dev-launcher/Unsafe (5.1.12):
     - DoubleConversion
     - EXManifests
     - expo-dev-menu
@@ -137,10 +137,10 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-menu (6.1.10):
+  - expo-dev-menu (6.1.11):
     - DoubleConversion
-    - expo-dev-menu/Main (= 6.1.10)
-    - expo-dev-menu/ReactNativeCompatibles (= 6.1.10)
+    - expo-dev-menu/Main (= 6.1.11)
+    - expo-dev-menu/ReactNativeCompatibles (= 6.1.11)
     - glog
     - hermes-engine
     - RCT-Folly (= 2024.11.18.00)
@@ -164,7 +164,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - Yoga
   - expo-dev-menu-interface (1.10.0)
-  - expo-dev-menu/Main (6.1.10):
+  - expo-dev-menu/Main (6.1.11):
     - DoubleConversion
     - EXManifests
     - expo-dev-menu-interface
@@ -194,7 +194,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-menu/ReactNativeCompatibles (6.1.10):
+  - expo-dev-menu/ReactNativeCompatibles (6.1.11):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -218,7 +218,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-menu/SafeAreaView (6.1.10):
+  - expo-dev-menu/SafeAreaView (6.1.11):
     - DoubleConversion
     - ExpoModulesCore
     - glog
@@ -243,7 +243,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - expo-dev-menu/Vendored (6.1.10):
+  - expo-dev-menu/Vendored (6.1.11):
     - DoubleConversion
     - expo-dev-menu/SafeAreaView
     - glog
@@ -292,6 +292,8 @@ PODS:
   - ExpoLinking (7.1.5):
     - ExpoModulesCore
   - ExpoLocation (18.1.5):
+    - ExpoModulesCore
+  - ExpoMaps (0.10.0):
     - ExpoModulesCore
   - ExpoModulesCore (2.3.13):
     - DoubleConversion
@@ -1678,6 +1680,8 @@ PODS:
     - ReactCommon/turbomodule/core
   - react-native-get-random-values (1.11.0):
     - React-Core
+  - react-native-maps (1.20.1):
+    - React-Core
   - react-native-safe-area-context (5.4.0):
     - DoubleConversion
     - glog
@@ -2381,6 +2385,7 @@ DEPENDENCIES:
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoLocation (from `../node_modules/expo-location/ios`)
+  - ExpoMaps (from `../node_modules/expo-maps/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
@@ -2426,6 +2431,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
+  - react-native-maps (from `../node_modules/react-native-maps`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-webview (from `../node_modules/react-native-webview`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2518,6 +2524,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-linking/ios"
   ExpoLocation:
     :path: "../node_modules/expo-location/ios"
+  ExpoMaps:
+    :path: "../node_modules/expo-maps/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoSplashScreen:
@@ -2605,6 +2613,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-get-random-values:
     :path: "../node_modules/react-native-get-random-values"
+  react-native-maps:
+    :path: "../node_modules/react-native-maps"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-webview:
@@ -2691,9 +2701,9 @@ SPEC CHECKSUMS:
   EXJSONUtils: 1d3e4590438c3ee593684186007028a14b3686cd
   EXManifests: 951161dd9a63523c4eef0fa2a7476639a7ba230d
   Expo: a9fc723f6c8f673f0e7e036c9021772d3a1a0707
-  expo-dev-client: 1234efa151154678fa5545d0dbd453edda0e9402
-  expo-dev-launcher: c574c489cacbb67f8d3286dc7c3dbb57fc44de58
-  expo-dev-menu: 56d5bdee4af7361bcfb6a6ce42419befd81d45ef
+  expo-dev-client: cdc6599329032065992014c40413afd46629a9bc
+  expo-dev-launcher: 0dc31c4b9834d170745fbed01673279db732dc1d
+  expo-dev-menu: e0a52332a0daa07b22ea61f9d8ff0b25bc7e3971
   expo-dev-menu-interface: 609c35ae8b97479cdd4c9e23c8cf6adc44beea0e
   ExpoAsset: 3bc9adb7dbbf27ae82c18ca97eb988a3ae7e73b1
   ExpoBlur: 7f9379db213e4a56aeceda82e94a7fea1b1d8c48
@@ -2705,6 +2715,7 @@ SPEC CHECKSUMS:
   ExpoKeepAwake: bf0811570c8da182bfb879169437d4de298376e7
   ExpoLinking: b85ff4eafeae6fc638c6cace60007ae521af0ef4
   ExpoLocation: a319a1b2c00b82c29e8a24227e0f00d1e19662c5
+  ExpoMaps: 0540719934f8c1b2b14a73780e607ef88ed6a04c
   ExpoModulesCore: 5d37821c36f3781dcd0ea9a393800c90eaa6259d
   ExpoSplashScreen: f524572afd81522e40850eaa7163e2ae99cce783
   ExpoSymbols: 5324de61341b396965a1cd3d2c738227b13d6a60
@@ -2751,6 +2762,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: c3f4b608e4a59dd2f6a416ef4d47a14400194468
   React-microtasksnativemodule: 054f34e9b82f02bd40f09cebd4083828b5b2beb6
   react-native-get-random-values: d16467cf726c618e9c7a8c3c39c31faa2244bbba
+  react-native-maps: 9febd31278b35cd21e4fad2cf6fa708993be5dab
   react-native-safe-area-context: 562163222d999b79a51577eda2ea8ad2c32b4d06
   react-native-webview: 520bcb79c3f2af91e157cdd695732a34ab5f25c8
   React-NativeModulesApple: 2c4377e139522c3d73f5df582e4f051a838ff25e

@@ -2,13 +2,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import * as Location from 'expo-location';
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MapView, { Callout, MAP_TYPES, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Callout, MAP_TYPES, Marker } from 'react-native-maps';
 import { supabase } from "../../../lib/supabase";
 import type { UserEvent } from "../../../types/user_event";
-const router = require("expo-router").useRouter();
 
 // EZRA Todo: add user implementation like you did in own_groups_view.tsx below:    (Only if its necessary to do so, I'm not completely sure what that part of the code does, so im leaving it to you)
 //                                                                                 ---->     go to line 253 and 256  <----
@@ -17,6 +16,7 @@ const router = require("expo-router").useRouter();
 // const user: import("@supabase/supabase-js").User = JSON.parse(userStr as string);      delete these comments after
 
 export default function GeoMap() {
+  const router = useRouter();
   type Region = {
     latitude: number;
     longitude: number;
@@ -152,7 +152,6 @@ export default function GeoMap() {
         <MapView
           style={{ width: '100%', height: '100%' }}
           ref={mapRef}
-          provider={PROVIDER_GOOGLE}
           initialRegion={mapRegion}
           onRegionChangeComplete={handleRegionChangeComplete}
           mapType={chosenType.type}
