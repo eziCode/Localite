@@ -55,11 +55,11 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
-    <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app uses your location to find nearby groups and events.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app uses your location even in the background to help you stay connected.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to save photos</string>

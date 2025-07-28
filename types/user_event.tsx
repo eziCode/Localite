@@ -10,6 +10,8 @@ export type UserEvent = {
     event_invite_code: string;
     post_only_to_group: boolean;
     location_name: string;
+    min_age: number;
+    max_age: number;
     latitude: number;
     longitude: number;
     upvotes: number;
